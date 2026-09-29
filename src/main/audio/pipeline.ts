@@ -4,8 +4,9 @@
  * arrive; `tick()` is called `METER_FPS` times per second and hands out one
  * meter frame and one waveform frame.
  *
- * Later stages plug in at the marked points: the resampler (task 15) and the
- * mixer (task 16) before the gain, the encoder (task 13) after it.
+ * While recording, the gained samples also go to the sink (`setSink`), so the
+ * file hears the Level slider. The resampler (task 15) and the mixer (task 16)
+ * plug in at the marked point, before the gain.
  */
 
 import { WAVE_COLUMNS_PER_FRAME } from '@shared/defaults'
@@ -23,6 +24,7 @@ export class Pipeline {
   private readonly gain: GainStage
   private readonly meter: MeterAccumulator
   private readonly wave: WaveformAccumulator
+  private sink: ((samples: Float32Array) => void) | null = null
 
   constructor(
     private readonly channels: number,
@@ -38,10 +40,15 @@ export class Pipeline {
     this.gain.set(percentToLinear(percent))
   }
 
+  /** Where the gained samples go besides the meter; `null` stops sending them. */
+  setSink(sink: ((samples: Float32Array) => void) | null): void {
+    this.sink = sink
+  }
+
   push(samples: Float32Array): void {
     // Resampler (15) and mixer (16) go here, before the gain.
     const gained = this.gain.process(samples, this.channels)
-    // The encoder (13) takes `gained` here.
+    this.sink?.(gained)
     this.meter.add(gained)
     this.wave.add(gained)
   }

@@ -7,52 +7,50 @@
  * `Enter`) arrives with task 17.
  */
 
-import type { HistoryItem } from '@shared/types'
+import type { HistoryItem, SessionSnapshot } from '@shared/types'
 import { UNKNOWN_DURATION, formatDuration } from '../lib/duration'
 import styles from './RecordingList.module.css'
 
 interface RecordingListProps {
   items: HistoryItem[]
   selectedId?: string | null
-  /** Item still being written, if any. */
-  recordingId?: string | null
+  /** File still being written, shown on top with `--:--` until it is saved. */
+  recordingFile?: SessionSnapshot['file']
   onSelect?: (id: string) => void
   onOpen?: (item: HistoryItem) => void
 }
 
-function rowClass(isSelected: boolean, isRecording: boolean): string {
-  const classes = [styles.row]
-  if (isRecording) classes.push(styles.active)
-  if (isSelected) classes.push(styles.selected)
-  return classes.join(' ')
+function rowClass(isSelected: boolean): string {
+  return isSelected ? `${styles.row} ${styles.selected}` : styles.row
 }
 
 export function RecordingList({
   items,
   selectedId = null,
-  recordingId = null,
+  recordingFile = null,
   onSelect,
   onOpen
 }: RecordingListProps): React.JSX.Element {
   return (
     <div className={styles.list}>
-      {items.map((item) => {
-        const isRecording = item.id === recordingId
-        return (
-          <div
-            key={item.id}
-            className={rowClass(item.id === selectedId, isRecording)}
-            title={item.path}
-            onClick={() => onSelect?.(item.id)}
-            onDoubleClick={() => !isRecording && onOpen?.(item)}
-          >
-            <span className={styles.name}>{item.name}</span>
-            <span className={styles.duration}>
-              {isRecording ? UNKNOWN_DURATION : formatDuration(item.durationMs)}
-            </span>
-          </div>
-        )
-      })}
+      {recordingFile && (
+        <div className={`${styles.row} ${styles.active}`} title={recordingFile.path}>
+          <span className={styles.name}>{recordingFile.name}</span>
+          <span className={styles.duration}>{UNKNOWN_DURATION}</span>
+        </div>
+      )}
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className={rowClass(item.id === selectedId)}
+          title={item.path}
+          onClick={() => onSelect?.(item.id)}
+          onDoubleClick={() => onOpen?.(item)}
+        >
+          <span className={styles.name}>{item.name}</span>
+          <span className={styles.duration}>{formatDuration(item.durationMs)}</span>
+        </div>
+      ))}
     </div>
   )
 }

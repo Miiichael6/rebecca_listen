@@ -8,7 +8,7 @@ import { logger } from '../log'
 import { settings } from '../settings'
 import { audioEngine } from '../audio/engine/SidecarAudioEngine'
 import { initMonitor, refreshMonitor, setMonitorLevel } from '../audio/monitor'
-import { initSession, record, snapshot, stop } from '../audio/session'
+import { initSession } from '../audio/appSession'
 import { broadcast, handle } from './typed'
 
 async function open(path: string): Promise<void> {
@@ -21,7 +21,7 @@ async function open(path: string): Promise<void> {
 }
 
 export function registerAudioIpc(): void {
-  initSession({
+  const session = initSession({
     state: (next) => broadcast('session:state', next),
     notice: (notice) => broadcast('notice', notice)
   })
@@ -47,11 +47,11 @@ export function registerAudioIpc(): void {
     setMonitorLevel(settings.getLevel())
   })
 
-  handle('session:record', () => record())
-  handle('session:stop', () => stop())
-  // Pause and Split come with tasks 13 and 27: until then they change nothing.
-  handle('session:pause', () => snapshot())
-  handle('session:split', () => snapshot())
+  handle('session:record', () => session.record())
+  handle('session:pause', () => session.togglePause())
+  handle('session:stop', () => session.stop())
+  // Split comes with task 27: until then it changes nothing.
+  handle('session:split', () => session.snapshot())
 
   handle('history:list', () => history.list())
   history.onChange((items) => broadcast('history:changed', items))

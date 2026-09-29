@@ -1,174 +1,265 @@
 /**
- * The recording session: Record opens the selected source and writes it to a
- * WAV, Stop closes the file and adds it to the list. Only `idle` and
- * `recording` for now; Pause and the state machine of §4.9 are task 13.
+ * The recording session (spec §4.4, §4.9): runs the effects of
+ * `sessionMachine` against the capture tap and an encoder. Events are handled
+ * one at a time, so a Stop that arrives while the file is still opening waits
+ * for it instead of racing it.
+ *
+ * Nothing here touches Electron: `appSession.ts` wires the real capture,
+ * ffmpeg, settings and history, and the tests wire fakes.
  */
 
 import { randomUUID } from 'crypto'
 import { basename } from 'path'
 import { SESSION_TICK_MS } from '@shared/defaults'
-import type { AudioDevice, Notice, SessionSnapshot, SourceSelection } from '@shared/types'
-import { resolveOutputPath } from '../files/naming'
-import { history } from '../history'
-import { logger } from '../log'
-import { settings } from '../settings'
-import { WavWriter } from './encoder/WavWriter'
-import type { AudioStream } from './engine/AudioEngine'
-import { audioEngine } from './engine/SidecarAudioEngine'
-import { resolveForRecording } from './devices'
-import { addSilence, silenceBefore, type Timeline } from './silence'
+import type { HistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
+import type { CaptureSource, CaptureTap } from './capture'
+import type { Encoder, OutputSettings } from './encoder/Encoder'
+import { pauseToggle, transition, type SessionEffect, type SessionEvent } from './sessionMachine'
+import {
+  addSilence,
+  framesToMs,
+  resumeTimeline,
+  silenceBefore,
+  startTimeline,
+  type Timeline
+} from './silence'
+import { startTicker } from './ticker'
 
-interface Active {
-  device: AudioDevice
-  source: SourceSelection
-  stream: AudioStream
-  writer: WavWriter
-  timeline: Timeline
-  createdAt: number
-  ticker: NodeJS.Timeout
-}
-
-type Emit = {
+export interface SessionEmit {
   state: (snapshot: SessionSnapshot) => void
   notice: (notice: Notice) => void
 }
 
-let active: Active | null = null
-/** Set between Record and the stream being open, so a double click does nothing. */
-let busy = false
-let emit: Emit = { state: () => {}, notice: () => {} }
-
-export function initSession(emitters: Emit): void {
-  emit = emitters
+export interface SessionDeps {
+  capture: CaptureSource
+  createEncoder: () => Encoder
+  /** Where the next file goes and how it is encoded, read from the settings when it opens. */
+  nextFile: () => { path: string; output: OutputSettings }
+  addToHistory: (item: HistoryItem) => void
+  emit: SessionEmit
+  log: { info: (message: string) => void; warn: (message: string) => void }
+  now?: () => number
 }
 
-export function snapshot(): SessionSnapshot {
-  if (!active) return { state: 'idle', elapsedMs: 0, file: null }
-  const { path } = active.writer
-  return {
-    state: 'recording',
-    elapsedMs: active.writer.durationMs,
-    file: { path, name: basename(path) }
+interface OpenFile {
+  tap: CaptureTap
+  encoder: Encoder
+  path: string
+  output: OutputSettings
+  timeline: Timeline
+  /** WASAPI loopback sends nothing during silence: the gaps are filled (see `silence.ts`). */
+  loopback: boolean
+  /** `false` while paused: the blocks keep coming but are not written. */
+  writing: boolean
+  createdAt: number
+  stopTicker: () => void
+}
+
+export class RecordingSession {
+  private state: SessionState = 'idle'
+  private file: OpenFile | null = null
+  private queue: Promise<void> = Promise.resolve()
+  private readonly now: () => number
+
+  constructor(private readonly deps: SessionDeps) {
+    this.now = deps.now ?? Date.now
   }
-}
 
-export function isRecording(): boolean {
-  return active !== null
-}
+  record(): Promise<SessionSnapshot> {
+    return this.dispatch({ type: 'RECORD' })
+  }
 
-function fail(message: string): SessionSnapshot {
-  logger.warn(message)
-  emit.notice({ level: 'error', message })
-  return snapshot()
-}
+  /** Pauses while recording, resumes while paused (§4.8). */
+  togglePause(): Promise<SessionSnapshot> {
+    return this.dispatch(pauseToggle(this.state))
+  }
 
-export async function record(): Promise<SessionSnapshot> {
-  if (active || busy) return snapshot()
-  busy = true
-  try {
-    const chosen = settings.getSource()
-    const { device, source, fellBack } = resolveForRecording(
-      chosen,
-      await audioEngine.listDevices()
-    )
-    if (!device) return fail('The selected source is not available. Pick another one.')
-    if (fellBack) {
-      const message = 'The selected device is not connected: recording Computer Sounds instead.'
-      logger.warn(`${message} (${chosen.mode === 'device' ? chosen.deviceId : chosen.mode})`)
-      emit.notice({ level: 'warn', message })
+  stop(): Promise<SessionSnapshot> {
+    return this.dispatch({ type: 'STOP' })
+  }
+
+  isActive(): boolean {
+    return this.state !== 'idle'
+  }
+
+  snapshot(): SessionSnapshot {
+    const file = this.file
+    return {
+      state: this.state,
+      elapsedMs: file ? framesToMs(file.timeline, file.timeline.framesWritten) : 0,
+      file: file ? { path: file.path, name: basename(file.path) } : null
     }
+  }
 
-    const path = resolveOutputPath(settings.get().files.folder, new Date(), 'wav')
-    const stream = await audioEngine.openStream(device)
-    const writer = new WavWriter(path, stream.sampleRate, stream.channels)
-    const now = Date.now()
-    const timeline: Timeline = {
-      sampleRate: stream.sampleRate,
-      startMs: now,
-      lastArrivalMs: now,
-      framesWritten: 0,
-      gaps: 0,
-      silenceFrames: 0
+  private dispatch(event: SessionEvent): Promise<SessionSnapshot> {
+    const run = this.queue.then(() => this.step(event))
+    this.queue = run.catch((error: Error) => this.deps.log.warn(`session: ${error.message}`))
+    return this.queue.then(() => this.snapshot())
+  }
+
+  private async step(event: SessionEvent): Promise<void> {
+    const next = transition(this.state, event)
+    if (!next.valid) {
+      this.deps.log.warn(`session: ${event.type} ignored while ${this.state}`)
+      return
     }
-    const loopback = device.kind === 'render'
+    this.state = next.state
+    for (const effect of next.effects) await this.run(effect)
+    this.deps.emit.state(this.snapshot())
+  }
 
-    stream.onData((samples) => {
-      const frames = samples.length / stream.channels
-      const arrival = Date.now()
-      if (loopback) fillSilence(writer, timeline, silenceBefore(timeline, arrival, frames))
-      writer.write(samples)
-      timeline.framesWritten += frames
-      timeline.lastArrivalMs = arrival
-    })
-    stream.onError((reason) => {
-      void finish(`Recording stopped: the device is no longer available (${reason}).`)
-    })
+  private async run(effect: SessionEffect): Promise<void> {
+    switch (effect.type) {
+      case 'openFile':
+        return this.openFile()
+      case 'pauseFile':
+        return this.pauseFile()
+      case 'resumeFile':
+        return this.resumeFile()
+      case 'closeFile':
+        return this.closeFile(effect.notice)
+      case 'abortFile':
+        return this.abortFile(effect.message)
+    }
+  }
 
-    active = {
-      device,
-      source,
-      stream,
-      writer,
-      timeline,
+  private async openFile(): Promise<void> {
+    let tap: CaptureTap | null = null
+    try {
+      tap = await this.deps.capture.acquire()
+      const { path, output } = this.deps.nextFile()
+      const encoder = this.deps.createEncoder()
+      await encoder.open(path, { sampleRate: tap.sampleRate, channels: tap.channels }, output)
+      this.attach(tap, encoder, path, output)
+    } catch (error) {
+      tap?.release()
+      await this.step({
+        type: 'FAILED',
+        message: `Could not start recording: ${(error as Error).message}`
+      })
+    }
+  }
+
+  private attach(tap: CaptureTap, encoder: Encoder, path: string, output: OutputSettings): void {
+    const now = this.now()
+    const file: OpenFile = {
+      tap,
+      encoder,
+      path,
+      output,
+      timeline: startTimeline(tap.sampleRate, now),
+      loopback: tap.device.kind === 'render',
+      writing: true,
       createdAt: now,
-      ticker: setInterval(() => emit.state(snapshot()), SESSION_TICK_MS)
+      stopTicker: startTicker(SESSION_TICK_MS, () => this.deps.emit.state(this.snapshot()))
     }
-    logger.info(
-      `recording started: ${path} from "${device.name}" (${device.kind}, ${stream.sampleRate} Hz, ${stream.channels} ch)`
-    )
-    emit.state(snapshot())
-    return snapshot()
-  } catch (error) {
-    return fail(`Could not start recording: ${(error as Error).message}`)
-  } finally {
-    busy = false
-  }
-}
+    this.file = file
 
-export async function stop(): Promise<SessionSnapshot> {
-  if (!active) return snapshot()
-  await finish(null)
-  return snapshot()
-}
-
-function fillSilence(writer: WavWriter, timeline: Timeline, frames: number): void {
-  writer.writeSilence(frames)
-  addSilence(timeline, frames)
-}
-
-/** Closes the file and lists it. `warning` is shown when the stop was not asked for. */
-async function finish(warning: string | null): Promise<void> {
-  const current = active
-  if (!current) return
-  active = null
-  clearInterval(current.ticker)
-
-  await current.stream.stop().catch((error: Error) => logger.warn(`stream stop: ${error.message}`))
-  const { writer, timeline } = current
-  if (current.device.kind === 'render') {
-    fillSilence(writer, timeline, silenceBefore(timeline, Date.now(), 0))
-  }
-
-  try {
-    writer.close()
-    history.add({
-      id: randomUUID(),
-      path: writer.path,
-      name: basename(writer.path),
-      format: 'wav',
-      durationMs: writer.durationMs,
-      sizeBytes: writer.sizeBytes,
-      createdAt: current.createdAt,
-      source: current.source
+    tap.onData((samples) => this.write(file, samples))
+    tap.onLost((reason) => {
+      if (this.file === file) void this.dispatch({ type: 'DEVICE_LOST', reason })
     })
-    const silenceMs = Math.round((timeline.silenceFrames / timeline.sampleRate) * 1000)
-    logger.info(
-      `recording saved: ${writer.path} (${Math.round(writer.durationMs)} ms, ` +
-        `${timeline.gaps} gaps filled with ${silenceMs} ms of silence)`
+    encoder.onError((error) => {
+      if (this.file === file) void this.dispatch({ type: 'FAILED', message: error.message })
+    })
+
+    if (tap.fellBack) {
+      const message = 'The selected device is not connected: recording Computer Sounds instead.'
+      this.deps.log.warn(message)
+      this.deps.emit.notice({ level: 'warn', message })
+    }
+    this.deps.log.info(
+      `recording started: ${path} (${output.format}) from "${tap.device.name}" ` +
+        `(${tap.device.kind}, ${tap.sampleRate} Hz, ${tap.channels} ch)`
     )
-    if (warning) emit.notice({ level: 'warn', message: warning })
-  } catch (error) {
-    fail(`Could not save the recording: ${(error as Error).message}`)
   }
-  emit.state(snapshot())
+
+  private write(file: OpenFile, samples: Float32Array): void {
+    if (!file.writing) return
+    const frames = samples.length / file.tap.channels
+    const arrival = this.now()
+    if (file.loopback) this.fillSilence(file, silenceBefore(file.timeline, arrival, frames))
+    void file.encoder.write(samples)
+    file.timeline.framesWritten += frames
+    file.timeline.lastArrivalMs = arrival
+  }
+
+  private fillSilence(file: OpenFile, frames: number): void {
+    if (frames <= 0) return
+    void file.encoder.write(new Float32Array(frames * file.tap.channels))
+    addSilence(file.timeline, frames)
+  }
+
+  /** Silence up to now, when the loopback went quiet before the pause or the stop. */
+  private fillTail(file: OpenFile): void {
+    if (file.loopback && file.writing) {
+      this.fillSilence(file, silenceBefore(file.timeline, this.now(), 0))
+    }
+  }
+
+  private pauseFile(): void {
+    const file = this.file
+    if (!file) return
+    this.fillTail(file)
+    file.writing = false
+  }
+
+  private resumeFile(): void {
+    const file = this.file
+    if (!file) return
+    resumeTimeline(file.timeline, this.now())
+    file.writing = true
+  }
+
+  /** Takes the open file out of the session, so late blocks and events find nothing. */
+  private detach(): OpenFile | null {
+    const file = this.file
+    this.file = null
+    if (!file) return null
+    file.stopTicker()
+    file.tap.release()
+    return file
+  }
+
+  private async closeFile(notice?: string): Promise<void> {
+    const file = this.file
+    if (!file) return
+    this.fillTail(file)
+    this.detach()
+    try {
+      const final = await file.encoder.close()
+      this.deps.addToHistory({
+        id: randomUUID(),
+        path: final.path,
+        name: basename(final.path),
+        format: final.format,
+        durationMs: final.durationMs,
+        sizeBytes: final.sizeBytes,
+        createdAt: file.createdAt,
+        source: file.tap.source
+      })
+      const { gaps, silenceFrames } = file.timeline
+      this.deps.log.info(
+        `recording saved: ${final.path} (${final.format}, ${Math.round(final.durationMs)} ms, ` +
+          `${gaps} gaps filled with ${Math.round(framesToMs(file.timeline, silenceFrames))} ms of silence)`
+      )
+      if (notice) {
+        this.deps.log.warn(notice)
+        this.deps.emit.notice({ level: 'warn', message: notice })
+      }
+    } catch (error) {
+      this.notifyError(`Could not save the recording: ${(error as Error).message}`)
+    }
+  }
+
+  private async abortFile(message: string): Promise<void> {
+    const file = this.detach()
+    await file?.encoder.abort()
+    this.notifyError(message)
+  }
+
+  private notifyError(message: string): void {
+    this.deps.log.warn(message)
+    this.deps.emit.notice({ level: 'error', message })
+  }
 }

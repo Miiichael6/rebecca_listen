@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LOOPBACK_GAP_MS } from '@shared/defaults'
-import { addSilence, silenceBefore, type Timeline } from './silence'
+import { addSilence, resumeTimeline, silenceBefore, type Timeline } from './silence'
 
 const RATE = 1000 // one frame per millisecond keeps the numbers readable
 
@@ -42,5 +42,15 @@ describe('addSilence', () => {
     addSilence(t, 0)
     addSilence(t, 25)
     expect(t).toMatchObject({ framesWritten: 175, gaps: 2, silenceFrames: 75 })
+  })
+})
+
+describe('resumeTimeline', () => {
+  it('never fills the paused time with silence', () => {
+    // 2 s written, paused at 2 s, resumed at 10 s: the next block is on time.
+    const t = timeline({ lastArrivalMs: 2000, framesWritten: 2000 })
+    resumeTimeline(t, 10_000)
+    expect(silenceBefore(t, 10_000 + LOOPBACK_GAP_MS, 10)).toBe(LOOPBACK_GAP_MS - 10)
+    expect(silenceBefore(t, 10_010, 10)).toBe(0)
   })
 })

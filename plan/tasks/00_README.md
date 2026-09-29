@@ -72,7 +72,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 10 | [UI de Level, VU meter y waveform en vivo](done/10_ui_level_vu_waveform.md) | 3 Captura | 04, 09 | ✅ Terminada |
 | 11 | [Encoder ffmpeg (MP3 y WAV)](done/11_encoder_ffmpeg.md)* | 4 Grabación | 02 | ✅ Terminada (escucha 4.1 pendiente del usuario) |
 | 12 | [Nombres automáticos y carpeta de destino](done/12_nombres_automaticos.md)* | 4 Grabación | 03 | ✅ Terminada |
-| 13 | [Sesión de grabación y máquina de estados](pending/13_sesion_y_maquina_de_estados.md) | 4 Grabación | 07, 10, 11, 12 | ⬜ Pendiente |
+| 13 | [Sesión de grabación y máquina de estados](done/13_sesion_y_maquina_de_estados.md) | 4 Grabación | 07, 10, 11, 12 | ✅ Terminada (falta prueba física con Bluetooth) |
 | 14 | [Recuperación de archivos .part](pending/14_recuperacion_part.md) | 4 Grabación | 13 | ⬜ Pendiente |
 | 15 | [Resampler con ratio ajustable](pending/15_resampler.md) | 5 Mezcla | 09 | ⬜ Pendiente |
 | 16 | [Mezcla de sistema + micrófono](pending/16_mixer_y_deriva.md) | 5 Mezcla | 13, 15 | ⬜ Pendiente |

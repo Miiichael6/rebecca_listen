@@ -49,6 +49,7 @@ export interface IpcInvoke {
   'level:set': { req: number; res: void }
 
   'session:record': { req: void; res: SessionSnapshot }
+  /** Pauses while recording, resumes while paused (§4.8). */
   'session:pause': { req: void; res: SessionSnapshot }
   'session:stop': { req: void; res: SessionSnapshot }
   /** Closes the current file and keeps recording into a new one. */

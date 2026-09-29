@@ -21,8 +21,11 @@
   color: var(--color-record);
 }
 
-.recording {
+.stoppable {
   border-color: var(--color-record);
+}
+
+.pulsing {
   animation: pulse 1.2s ease-in-out infinite;
 }
 

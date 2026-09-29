@@ -5,7 +5,7 @@ import { app, BrowserWindow } from 'electron'
 import { APP_ID } from '@shared/appInfo'
 import { watchDevicesWhileVisible } from './audio/deviceWatch'
 import { disposeMonitor, monitorWhileVisible } from './audio/monitor'
-import { isRecording, stop } from './audio/session'
+import { isRecording, stopRecording } from './audio/appSession'
 import { audioEngine } from './audio/engine/SidecarAudioEngine'
 import { handleMediaProtocol, registerMediaScheme } from './files/mediaProtocol'
 import { registerIpc } from './ipc'
@@ -52,7 +52,7 @@ app.on('before-quit', (event) => {
   if (!isRecording() || finishing) return
   event.preventDefault()
   finishing = true
-  void stop().finally(() => app.quit())
+  void stopRecording().finally(() => app.quit())
 })
 
 app.on('will-quit', () => {

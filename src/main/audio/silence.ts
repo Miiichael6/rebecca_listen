@@ -42,3 +42,28 @@ export function addSilence(timeline: Timeline, frames: number): void {
   timeline.silenceFrames += frames
   timeline.gaps += 1
 }
+
+export function startTimeline(sampleRate: number, nowMs: number): Timeline {
+  return {
+    sampleRate,
+    startMs: nowMs,
+    lastArrivalMs: nowMs,
+    framesWritten: 0,
+    gaps: 0,
+    silenceFrames: 0
+  }
+}
+
+export function framesToMs(timeline: Timeline, frames: number): number {
+  return (frames / timeline.sampleRate) * 1000
+}
+
+/**
+ * After a pause the wall clock has moved on without the file: the timeline is
+ * moved so that what was written ends at `nowMs`, and the pause is never
+ * filled with silence.
+ */
+export function resumeTimeline(timeline: Timeline, nowMs: number): void {
+  timeline.startMs = nowMs - framesToMs(timeline, timeline.framesWritten)
+  timeline.lastArrivalMs = nowMs
+}

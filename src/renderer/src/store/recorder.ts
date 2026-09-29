@@ -1,11 +1,11 @@
 /**
  * Everything the main window shows about recording: the selected source, the
- * session and the list (the devices are in `devices.ts`). Main owns all of it;
+ * level and the list (the devices are in `devices.ts`, the session in `session.ts`). Main owns all of it;
  * this is a copy kept in sync by the push events.
  */
 
 import { DEFAULT_LEVEL_PERCENT, LEVEL_SEND_MS } from '@shared/defaults'
-import type { HistoryItem, Notice, SessionSnapshot, SourceSelection } from '@shared/types'
+import type { HistoryItem, Notice, SourceSelection } from '@shared/types'
 import { create } from 'zustand'
 import { throttle } from '../lib/throttle'
 
@@ -15,7 +15,6 @@ interface RecorderStore {
   sourceListExpanded: boolean
   /** Level slider, in percent. */
   level: number
-  session: SessionSnapshot
   items: HistoryItem[]
   selectedId: string | null
   notice: Notice | null
@@ -36,7 +35,6 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
   source: null,
   sourceListExpanded: false,
   level: DEFAULT_LEVEL_PERCENT,
-  session: { state: 'idle', elapsedMs: 0, file: null },
   items: [],
   selectedId: null,
   notice: null,
@@ -68,7 +66,6 @@ let subscribed = false
 export async function loadRecorder(): Promise<void> {
   if (!subscribed) {
     subscribed = true
-    window.api.on('session:state', (session) => useRecorderStore.setState({ session }))
     window.api.on('history:changed', (items) =>
       // The newest recording is selected, so ▶ plays what was just recorded.
       useRecorderStore.setState({ items, selectedId: items[0]?.id ?? null })
