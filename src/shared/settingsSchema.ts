@@ -6,8 +6,13 @@
  * must survive a restart.
  */
 
-import { DEFAULT_LEVEL_PERCENT, DEFAULT_SETTINGS, DEFAULT_SOURCE } from './defaults'
-import type { Settings, SourceSelection } from './types'
+import {
+  DEFAULT_LEVEL_PERCENT,
+  DEFAULT_SETTINGS,
+  DEFAULT_SOURCE,
+  DEFAULT_UI_STATE
+} from './defaults'
+import type { Settings, SourceSelection, UiState } from './types'
 
 /**
  * Bumped every time a migration is added to `src/main/settingsMigrations.ts`.
@@ -32,6 +37,7 @@ export interface StoredSettings {
   level: number
   /** `bounds` is `null` until the window has been moved or resized once. */
   window: { bounds: WindowBounds | null }
+  ui: UiState
 }
 
 /** A fresh file: the defaults of `defaults.ts` at the current version. */
@@ -41,6 +47,7 @@ export function defaultStoredSettings(): StoredSettings {
     settings: structuredClone(DEFAULT_SETTINGS),
     source: structuredClone(DEFAULT_SOURCE),
     level: DEFAULT_LEVEL_PERCENT,
-    window: { bounds: null }
+    window: { bounds: null },
+    ui: structuredClone(DEFAULT_UI_STATE)
   }
 }

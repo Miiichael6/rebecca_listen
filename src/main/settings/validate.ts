@@ -29,6 +29,7 @@ import type {
   SourceMode,
   SourceSelection,
   SystemSettings,
+  UiState,
   WavSettings
 } from '@shared/types'
 import {
@@ -116,7 +117,7 @@ export function validateSettings(raw: unknown, fallback: Settings = DEFAULT_SETT
 }
 
 // ---------------------------------------------------------------------------
-// Source and window geometry (spec §4.1, §13)
+// Source, UI state and window geometry (spec §4.1, §13)
 // ---------------------------------------------------------------------------
 
 const SOURCE_MODES: readonly SourceMode[] = ['system', 'voice', 'mixed', 'device']
@@ -131,6 +132,12 @@ export function validateSource(raw: unknown, fallback: SourceSelection): SourceS
   // now, which task 07 handles when it fills the dropdown.
   if (typeof deviceId !== 'string' || deviceId === '') return fallback
   return { mode: 'device', deviceId }
+}
+
+export function validateUiState(raw: unknown, fallback: UiState): UiState {
+  return {
+    sourceListExpanded: booleanOr(rawAt(raw, 'sourceListExpanded'), fallback.sourceListExpanded)
+  }
 }
 
 /** `null` while the file has no usable geometry, so the defaults of §4 apply. */

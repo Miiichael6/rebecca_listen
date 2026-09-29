@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AudioDevice } from '@shared/types'
-import { resolveSource } from './devices'
+import { resolveForRecording, resolveSource } from './devices'
 
 function device(id: string, kind: AudioDevice['kind'], isDefault: boolean): AudioDevice {
   return { id, name: id, groupName: id, kind, isDefault, channels: 2, sampleRate: 48000 }
@@ -30,5 +30,32 @@ describe('resolveSource', () => {
 
   it('does not resolve the mixed mode yet', () => {
     expect(resolveSource({ mode: 'mixed' }, DEVICES)).toBeNull()
+  })
+})
+
+describe('resolveForRecording', () => {
+  it('opens the chosen device while it is connected', () => {
+    const chosen = { mode: 'device', deviceId: 'line' } as const
+    expect(resolveForRecording(chosen, DEVICES)).toEqual({
+      device: DEVICES[3],
+      source: chosen,
+      fellBack: false
+    })
+  })
+
+  it('falls back to Computer Sounds when the chosen device is gone', () => {
+    expect(resolveForRecording({ mode: 'device', deviceId: 'usb' }, DEVICES)).toEqual({
+      device: DEVICES[1],
+      source: { mode: 'system' },
+      fellBack: true
+    })
+  })
+
+  it('does not fall back for a quick mode without its default', () => {
+    expect(resolveForRecording({ mode: 'voice' }, [DEVICES[0]])).toEqual({
+      device: null,
+      source: { mode: 'voice' },
+      fellBack: false
+    })
   })
 })

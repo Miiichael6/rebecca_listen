@@ -7,7 +7,7 @@ import {
 } from '@shared/defaults'
 import { MAIN_WINDOW_SIZE } from '@shared/appInfo'
 import { describe, expect, it } from 'vitest'
-import { validateSettings, validateSource, validateWindowBounds } from './validate'
+import { validateSettings, validateSource, validateUiState, validateWindowBounds } from './validate'
 
 const lowest = <T extends number>(values: readonly T[]): T =>
   values.reduce((min, value) => (value < min ? value : min))
@@ -131,6 +131,18 @@ describe('validateSource', () => {
 
   it('drops the device id of a non-device mode', () => {
     expect(validateSource({ mode: 'voice', deviceId: 'Mic' }, fallback)).toEqual({ mode: 'voice' })
+  })
+})
+
+describe('validateUiState', () => {
+  const fallback = { sourceListExpanded: false }
+
+  it('keeps a boolean and falls back on anything else', () => {
+    expect(validateUiState({ sourceListExpanded: true }, fallback)).toEqual({
+      sourceListExpanded: true
+    })
+    expect(validateUiState({ sourceListExpanded: 1 }, fallback)).toEqual(fallback)
+    expect(validateUiState(undefined, fallback)).toEqual(fallback)
   })
 })
 

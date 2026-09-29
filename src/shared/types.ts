@@ -159,6 +159,12 @@ export interface HistoryItem {
 // Misc
 // ---------------------------------------------------------------------------
 
+/** Bits of main window UI state that survive a restart. */
+export interface UiState {
+  /** Advanced device list of the Source dropdown ("•••" bar) expanded. */
+  sourceListExpanded: boolean
+}
+
 export interface AppInfo {
   name: string
   version: string

@@ -19,6 +19,7 @@ import type {
   Settings,
   SettingsUpdate,
   SourceSelection,
+  UiState,
   WaveFrame
 } from './types'
 
@@ -34,6 +35,9 @@ export interface IpcInvoke {
   /** Patches one section and returns the settings as they were stored. */
   'settings:update': { req: SettingsUpdate; res: Settings }
   'settings:reset': { req: void; res: Settings }
+  /** Main window UI state kept across restarts; `set` returns it as stored. */
+  'ui:get': { req: void; res: UiState }
+  'ui:set': { req: Partial<UiState>; res: UiState }
 
   /** Endpoints usable right now; disconnected ones are not listed. */
   'devices:list': { req: void; res: AudioDevice[] }
@@ -116,6 +120,8 @@ export const INVOKE_CHANNELS = [
   'settings:get',
   'settings:update',
   'settings:reset',
+  'ui:get',
+  'ui:set',
   'devices:list',
   'source:get',
   'source:set',

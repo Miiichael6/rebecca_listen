@@ -15,7 +15,7 @@ import { settings } from '../settings'
 import { WavWriter } from './encoder/WavWriter'
 import type { AudioStream } from './engine/AudioEngine'
 import { audioEngine } from './engine/SidecarAudioEngine'
-import { resolveSource } from './devices'
+import { resolveForRecording } from './devices'
 import { silenceBefore, type Timeline } from './silence'
 
 interface Active {
@@ -66,9 +66,17 @@ export async function record(): Promise<SessionSnapshot> {
   if (active || busy) return snapshot()
   busy = true
   try {
-    const source = settings.getSource()
-    const device = resolveSource(source, await audioEngine.listDevices())
+    const chosen = settings.getSource()
+    const { device, source, fellBack } = resolveForRecording(
+      chosen,
+      await audioEngine.listDevices()
+    )
     if (!device) return fail('The selected source is not available. Pick another one.')
+    if (fellBack) {
+      const message = 'The selected device is not connected: recording Computer Sounds instead.'
+      logger.warn(`${message} (${chosen.mode === 'device' ? chosen.deviceId : chosen.mode})`)
+      emit.notice({ level: 'warn', message })
+    }
 
     const path = resolveOutputPath(settings.get().files.folder, new Date(), 'wav')
     const stream = await audioEngine.openStream(device)

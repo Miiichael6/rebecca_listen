@@ -11,7 +11,7 @@ import { useEffect } from 'react'
 import type { HistoryItem, WaveFrame } from '@shared/types'
 import { LevelSlider } from '../../components/LevelSlider'
 import { RecordingList } from '../../components/RecordingList'
-import { SourcePicker } from '../../components/SourcePicker'
+import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
 import { StatusBar } from '../../components/StatusBar'
 import { Timer } from '../../components/Timer'
 import { TransportBar } from '../../components/TransportBar'
@@ -29,8 +29,8 @@ const SILENT_DB: number[] = []
 const RECORDING_ROW = 'recording'
 
 export function MainWindow(): React.JSX.Element {
-  const { source, session, items, selectedId, notice } = useRecorderStore()
-  const { setSource, select, dismissNotice } = useRecorderStore()
+  const { source, sourceListExpanded, session, items, selectedId, notice } = useRecorderStore()
+  const { setSource, setSourceListExpanded, select, dismissNotice } = useRecorderStore()
   const { devices, refresh: refreshDevices } = useDevicesStore()
   const { playingId, paused, positionMs, play, pause, stop } = usePlayerStore()
   const recording = session.state !== 'idle'
@@ -75,9 +75,11 @@ export function MainWindow(): React.JSX.Element {
       <SourcePicker
         source={source}
         devices={devices}
+        expanded={sourceListExpanded}
         disabled={recording}
         onOpen={() => void refreshDevices()}
         onChange={(next) => void setSource(next)}
+        onExpandedChange={(expanded) => void setSourceListExpanded(expanded)}
       />
       <LevelSlider percent={100} />
       <VuMeter rmsDb={SILENT_DB} peakDb={SILENT_DB} />

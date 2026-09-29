@@ -9,17 +9,21 @@ import { create } from 'zustand'
 
 interface RecorderStore {
   source: SourceSelection | null
+  /** Device list of the Source dropdown expanded ("•••" bar). */
+  sourceListExpanded: boolean
   session: SessionSnapshot
   items: HistoryItem[]
   selectedId: string | null
   notice: Notice | null
   setSource: (source: SourceSelection) => Promise<void>
+  setSourceListExpanded: (expanded: boolean) => Promise<void>
   select: (id: string) => void
   dismissNotice: () => void
 }
 
 export const useRecorderStore = create<RecorderStore>((set) => ({
   source: null,
+  sourceListExpanded: false,
   session: { state: 'idle', elapsedMs: 0, file: null },
   items: [],
   selectedId: null,
@@ -28,6 +32,12 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
   setSource: async (source) => {
     await window.api.invoke('source:set', source)
     set({ source })
+  },
+
+  setSourceListExpanded: async (expanded) => {
+    set({ sourceListExpanded: expanded })
+    const ui = await window.api.invoke('ui:set', { sourceListExpanded: expanded })
+    set({ sourceListExpanded: ui.sourceListExpanded })
   },
 
   select: (id) => set({ selectedId: id }),
@@ -48,9 +58,10 @@ export async function loadRecorder(): Promise<void> {
     )
     window.api.on('notice', (notice) => useRecorderStore.setState({ notice }))
   }
-  const [source, items] = await Promise.all([
+  const [source, ui, items] = await Promise.all([
     window.api.invoke('source:get'),
+    window.api.invoke('ui:get'),
     window.api.invoke('history:list')
   ])
-  useRecorderStore.setState({ source, items })
+  useRecorderStore.setState({ source, sourceListExpanded: ui.sourceListExpanded, items })
 }

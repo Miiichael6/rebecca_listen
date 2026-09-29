@@ -15,7 +15,7 @@ import {
   type StoredSettings
 } from '@shared/settingsSchema'
 import { clampToRange, isRaw, rawAt, type Raw } from './coerce'
-import { validateSettings, validateSource, validateWindowBounds } from './validate'
+import { validateSettings, validateSource, validateUiState, validateWindowBounds } from './validate'
 
 /** One step of the chain: reads the file at `to - 1` and returns it at `to`. */
 interface Migration {
@@ -45,7 +45,8 @@ function normalize(raw: Raw): StoredSettings {
     settings: validateSettings(raw.settings),
     source: validateSource(raw.source, fallback.source),
     level: clampToRange(raw.level, LEVEL_PERCENT, fallback.level),
-    window: { bounds: validateWindowBounds(rawAt(raw.window, 'bounds')) }
+    window: { bounds: validateWindowBounds(rawAt(raw.window, 'bounds')) },
+    ui: validateUiState(raw.ui, fallback.ui)
   }
 }
 

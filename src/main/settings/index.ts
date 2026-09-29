@@ -9,13 +9,13 @@
 
 import { DEFAULT_SETTINGS, LEVEL_PERCENT } from '@shared/defaults'
 import { SETTINGS_VERSION, type StoredSettings, type WindowBounds } from '@shared/settingsSchema'
-import type { Settings, SettingsUpdate, SourceSelection } from '@shared/types'
+import type { Settings, SettingsUpdate, SourceSelection, UiState } from '@shared/types'
 import { logger } from '../log'
 import { clampToRange } from './coerce'
 import { openSettingsFile, type SettingsFile } from './file'
 import { migrate } from './migrations'
 import { applyUpdate } from './patch'
-import { validateSettings } from './validate'
+import { validateSettings, validateUiState } from './validate'
 
 type ChangeListener = (settings: Settings) => void
 
@@ -94,6 +94,17 @@ function setLevel(percent: number): void {
   persist()
 }
 
+function getUi(): UiState {
+  return state().ui
+}
+
+function setUi(patch: Partial<UiState>): UiState {
+  const current = state()
+  stored = { ...current, ui: validateUiState({ ...current.ui, ...patch }, current.ui) }
+  persist()
+  return stored.ui
+}
+
 function getWindowBounds(): WindowBounds | null {
   return state().window.bounds
 }
@@ -119,6 +130,8 @@ export const settings = {
   setSource,
   getLevel,
   setLevel,
+  getUi,
+  setUi,
   getWindowBounds,
   setWindowBounds,
   onChange

@@ -45,7 +45,8 @@ describe('migrate · v1 with missing keys', () => {
       settings: DEFAULT_SETTINGS,
       source: { mode: 'device', deviceId: 'Microphone (capture)' },
       level: 150,
-      window: { bounds: { x: 0, y: 0, width: 500, height: 700 } }
+      window: { bounds: { x: 0, y: 0, width: 500, height: 700 } },
+      ui: { sourceListExpanded: true }
     }
     expect(migrate(file)).toEqual({ ...file, version: SETTINGS_VERSION })
   })
@@ -58,14 +59,16 @@ describe('migrate · out-of-range values', () => {
     expect(migrate({ version: 1, level: 'loud' }).level).toBe(DEFAULT_LEVEL_PERCENT)
   })
 
-  it('drops a corrupt source and corrupt geometry', () => {
+  it('drops a corrupt source, corrupt geometry and corrupt UI state', () => {
     const stored = migrate({
       version: 1,
       source: { mode: 'device', deviceId: 99 },
-      window: { bounds: 'maximized' }
+      window: { bounds: 'maximized' },
+      ui: { sourceListExpanded: 'yes' }
     })
     expect(stored.source).toEqual(defaultStoredSettings().source)
     expect(stored.window.bounds).toBeNull()
+    expect(stored.ui).toEqual(defaultStoredSettings().ui)
   })
 })
 

@@ -11,6 +11,7 @@ import type {
   Mp3Mode,
   Settings,
   SourceSelection,
+  UiState,
   WavBitDepth
 } from './types'
 
@@ -26,6 +27,12 @@ export interface NumericRange {
 // ---------------------------------------------------------------------------
 
 export const DEFAULT_SOURCE: SourceSelection = { mode: 'system' }
+
+/** What a specific device that is gone records instead (§4.1). */
+export const FALLBACK_SOURCE: SourceSelection = { mode: 'system' }
+
+/** The quick modes cover the usual case, so the device list starts collapsed. */
+export const DEFAULT_UI_STATE: UiState = { sourceListExpanded: false }
 
 /** Gain of the Level slider, in percent. Double click resets it to the default. */
 export const LEVEL_PERCENT: NumericRange = { min: 0, max: 200, step: 1 }
