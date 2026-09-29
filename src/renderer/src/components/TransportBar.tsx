@@ -3,8 +3,9 @@
  * Pause pill, the Split button (in place of the original "Upgrade") and the
  * gear that opens Options.
  *
- * There is no playback progress bar: ▶ opens the file in the system player
- * (task 17). Wiring comes with task 13; here every handler is optional.
+ * ▶ ⏸ ■ play the selected recording inside the app (■ stops the recording
+ * instead while one is in progress). The round button starts a recording and,
+ * while recording, stops it.
  */
 
 import { Circle, Eject, Pause, Play, Settings, Square } from 'lucide-react'
@@ -14,7 +15,7 @@ import styles from './TransportBar.module.css'
 const ICON = 14
 
 interface TransportBarProps {
-  /** Disables Split, which only makes sense while recording. */
+  /** Turns the round button into Stop and enables Split. */
   recording?: boolean
   onRecord?: () => void
   onFile?: () => void
@@ -37,8 +38,17 @@ export function TransportBar({
 }: TransportBarProps): React.JSX.Element {
   return (
     <div className={styles.bar}>
-      <button type="button" className={styles.record} title="Record" onClick={onRecord}>
-        <Circle size={18} fill="currentColor" aria-hidden />
+      <button
+        type="button"
+        className={recording ? `${styles.record} ${styles.recording}` : styles.record}
+        title={recording ? 'Stop recording' : 'Record'}
+        onClick={recording ? onStop : onRecord}
+      >
+        {recording ? (
+          <Square size={14} fill="currentColor" aria-hidden />
+        ) : (
+          <Circle size={18} fill="currentColor" aria-hidden />
+        )}
       </button>
 
       <div className={styles.pill}>
@@ -48,7 +58,12 @@ export function TransportBar({
         <button type="button" className={styles.pillButton} title="Stop" onClick={onStop}>
           <Square size={ICON} fill="currentColor" aria-hidden />
         </button>
-        <button type="button" className={styles.pillButton} title="Play" onClick={onPlay}>
+        <button
+          type="button"
+          className={styles.pillButton}
+          title="Play the selected recording"
+          onClick={onPlay}
+        >
           <Play size={ICON} fill="currentColor" aria-hidden />
         </button>
         <button type="button" className={styles.pillButton} title="Pause" onClick={onPause}>

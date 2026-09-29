@@ -1,20 +1,25 @@
 //! `rl-capture`: audio capture sidecar for Rebecca Listen.
 //!
-//! Reads JSON commands from stdin, one per line, and answers with JSON events
-//! on stderr. The protocol is described in `PROTOCOL.md`.
+//! Reads JSON commands from stdin, one per line, answers with JSON events on
+//! stderr and streams PCM on stdout. The protocol is described in `PROTOCOL.md`.
 
+mod capture;
 mod command;
 mod device;
 mod endpoint_name;
 mod enumerate;
 mod event;
+mod pcm;
 
+use std::collections::HashMap;
 use std::io::BufRead;
 
 use command::{Command, parse_command};
-use event::{ErrorCode, Event, emit};
+use event::{ErrorCode, Event, StreamErrorReason, emit};
 
 fn main() {
+    // Streams stop when dropped, so they live here for as long as they run.
+    let mut streams: HashMap<u8, cpal::Stream> = HashMap::new();
     for line in std::io::stdin().lock().lines() {
         // A broken stdin means main is gone: stop quietly.
         let Ok(line) = line else { break };
@@ -22,7 +27,7 @@ fn main() {
             continue;
         }
         match parse_command(&line) {
-            Ok(command) => run(command),
+            Ok(command) => run(command, &mut streams),
             Err(message) => emit(&Event::Error {
                 code: ErrorCode::BadCommand,
                 message,
@@ -31,13 +36,36 @@ fn main() {
     }
 }
 
-fn run(command: Command) {
+fn run(command: Command, streams: &mut HashMap<u8, cpal::Stream>) {
     match command {
         Command::List => list(),
-        Command::Open | Command::Start | Command::Stop => emit(&Event::Error {
-            code: ErrorCode::NotImplemented,
-            message: command.name().to_owned(),
-        }),
+        Command::Open {
+            stream_id,
+            device_id,
+            kind,
+        } => {
+            // Reusing an id replaces the old stream instead of leaking it.
+            streams.remove(&stream_id);
+            match capture::open(stream_id, &device_id, kind) {
+                Ok(open) => {
+                    streams.insert(stream_id, open.stream);
+                    emit(&Event::Opened {
+                        stream_id,
+                        sample_rate: open.sample_rate,
+                        channels: open.channels,
+                    });
+                }
+                Err(message) => emit(&Event::StreamError {
+                    stream_id,
+                    reason: StreamErrorReason::OpenFailed,
+                    message,
+                }),
+            }
+        }
+        Command::Stop { stream_id } => {
+            streams.remove(&stream_id);
+            emit(&Event::Stopped { stream_id });
+        }
     }
 }
 

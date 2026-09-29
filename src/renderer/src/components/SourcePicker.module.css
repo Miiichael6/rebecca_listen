@@ -12,8 +12,27 @@
   color: var(--color-text-muted);
 }
 
-.combo {
+.comboWrap {
+  position: relative;
   flex: 1;
+  min-width: 0;
+}
+
+/* The real list: invisible, on top of the combo, so a click opens it. */
+.native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.native:disabled {
+  cursor: default;
+}
+
+.combo {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -27,7 +46,7 @@
   text-align: left;
 }
 
-.combo:disabled {
+.combo.disabled {
   background: var(--color-control-disabled);
   color: var(--color-text-disabled);
   border-color: var(--color-border);
@@ -44,6 +63,6 @@
   color: var(--color-text-muted);
 }
 
-.combo:disabled .chevron {
+.combo.disabled .chevron {
   color: var(--color-text-disabled);
 }

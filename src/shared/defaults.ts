@@ -96,6 +96,25 @@ export const METER_FPS = 30
 /** Device list polling interval; replaces the COM hot-plug notifications. */
 export const DEVICE_POLL_MS = 2000
 
+/**
+ * A pause this long between loopback blocks means nothing was playing, and the
+ * gap is filled with silence (WASAPI sends no packets for silence).
+ */
+export const LOOPBACK_GAP_MS = 100
+
+/** `session:state` pushes per second while recording (§4.4). */
+export const SESSION_TICK_MS = 100
+
+/** How long main waits for an answer of the capture sidecar. */
+export const SIDECAR_TIMEOUT_MS = 5000
+
+/**
+ * Scheme the renderer plays recordings from: `rl-media://recording/<id>`.
+ * Main serves only files of the history (see `src/main/files/mediaProtocol.ts`).
+ */
+export const MEDIA_SCHEME = 'rl-media'
+export const mediaUrl = (id: string): string => `${MEDIA_SCHEME}://recording/${id}`
+
 /** File size is read with `fs.stat` at this interval while recording (§3.3). */
 export const FILE_PROGRESS_MS = 500
 

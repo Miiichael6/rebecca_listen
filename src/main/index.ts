@@ -3,6 +3,9 @@
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { app, BrowserWindow } from 'electron'
 import { APP_ID } from '@shared/appInfo'
+import { isRecording, stop } from './audio/session'
+import { audioEngine } from './audio/engine/SidecarAudioEngine'
+import { handleMediaProtocol, registerMediaScheme } from './files/mediaProtocol'
 import { registerIpc } from './ipc'
 import { initLog } from './log'
 import { initSettings } from './settings'
@@ -10,6 +13,7 @@ import { createMainWindow } from './window'
 
 // Before anything else, so an early failure is already in the log file.
 initLog()
+registerMediaScheme()
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId(APP_ID)
@@ -17,6 +21,7 @@ app.whenReady().then(() => {
   // The IPC handlers and the window geometry both read the settings.
   initSettings()
   registerIpc()
+  handleMediaProtocol()
 
   // F12 opens the DevTools in development; CommandOrControl+R is ignored in
   // production. See @electron-toolkit/utils.
@@ -30,6 +35,18 @@ app.whenReady().then(() => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })
 })
+
+// A recording in progress is closed properly before quitting, so the file is
+// complete instead of a `.part`.
+let finishing = false
+app.on('before-quit', (event) => {
+  if (!isRecording() || finishing) return
+  event.preventDefault()
+  finishing = true
+  void stop().finally(() => app.quit())
+})
+
+app.on('will-quit', () => audioEngine.dispose())
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

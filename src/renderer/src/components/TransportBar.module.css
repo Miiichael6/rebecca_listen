@@ -21,6 +21,17 @@
   color: var(--color-record);
 }
 
+.recording {
+  border-color: var(--color-record);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgb(217 56 58 / 25%);
+  }
+}
+
 .pill {
   display: flex;
   flex: none;

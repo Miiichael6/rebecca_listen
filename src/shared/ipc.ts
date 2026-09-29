@@ -38,6 +38,7 @@ export interface IpcInvoke {
   /** Endpoints usable right now; disconnected ones are not listed. */
   'devices:list': { req: void; res: AudioDevice[] }
 
+  'source:get': { req: void; res: SourceSelection }
   'source:set': { req: SourceSelection; res: void }
   /** Gain of the Level slider, in percent (see `LEVEL_PERCENT`). */
   'level:set': { req: number; res: void }
@@ -64,6 +65,8 @@ export interface IpcInvoke {
   'shell:openPath': { req: { path: string }; res: void }
   /** Opens the Explorer with the file selected. */
   'shell:showItemInFolder': { req: { path: string }; res: void }
+  /** Opens the recordings folder, creating it if it does not exist yet. */
+  'shell:openRecordingsFolder': { req: void; res: void }
   /** Opens the current log file (System tab, "Open Log File"). */
   'shell:openLogFile': { req: void; res: void }
 }
@@ -114,6 +117,7 @@ export const INVOKE_CHANNELS = [
   'settings:update',
   'settings:reset',
   'devices:list',
+  'source:get',
   'source:set',
   'level:set',
   'session:record',
@@ -128,6 +132,7 @@ export const INVOKE_CHANNELS = [
   'dialog:openAudioFile',
   'shell:openPath',
   'shell:showItemInFolder',
+  'shell:openRecordingsFolder',
   'shell:openLogFile'
 ] as const satisfies readonly InvokeChannel[]
 

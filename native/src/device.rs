@@ -1,10 +1,10 @@
 //! The device record sent to main, mirroring `AudioDevice` in
 //! `src/shared/types.ts`: field names must stay in sync with it.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// `render` endpoints are captured in loopback; `capture` ones are microphones.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum DeviceKind {
     Render,

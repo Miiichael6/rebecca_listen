@@ -3,7 +3,8 @@
  * duration on the right. The selected row gets a blue bar on its left, and the
  * file being recorded shows `--:--` in blue.
  *
- * Keyboard (`Supr`, `F2`, `Enter`) and double click to play arrive with task 17.
+ * Double click opens the file in the system player. Keyboard (`Supr`, `F2`,
+ * `Enter`) arrives with task 17.
  */
 
 import type { HistoryItem } from '@shared/types'
@@ -16,6 +17,7 @@ interface RecordingListProps {
   /** Item still being written, if any. */
   recordingId?: string | null
   onSelect?: (id: string) => void
+  onOpen?: (item: HistoryItem) => void
 }
 
 function rowClass(isSelected: boolean, isRecording: boolean): string {
@@ -29,7 +31,8 @@ export function RecordingList({
   items,
   selectedId = null,
   recordingId = null,
-  onSelect
+  onSelect,
+  onOpen
 }: RecordingListProps): React.JSX.Element {
   return (
     <div className={styles.list}>
@@ -39,7 +42,9 @@ export function RecordingList({
           <div
             key={item.id}
             className={rowClass(item.id === selectedId, isRecording)}
+            title={item.path}
             onClick={() => onSelect?.(item.id)}
+            onDoubleClick={() => !isRecording && onOpen?.(item)}
           >
             <span className={styles.name}>{item.name}</span>
             <span className={styles.duration}>

@@ -2,11 +2,11 @@
 
 Main lanza `resources/bin/rl-capture.exe` y habla con él por tres tuberías:
 
-| Tubería | Dirección | Contenido |
-|---|---|---|
-| stdin | main → sidecar | Comandos JSON, uno por línea |
-| stderr | sidecar → main | Respuestas y eventos JSON, uno por línea |
-| stdout | sidecar → main | Solo PCM binario (tarea 08). Nunca texto |
+| Tubería | Dirección      | Contenido                                |
+| ------- | -------------- | ---------------------------------------- |
+| stdin   | main → sidecar | Comandos JSON, uno por línea             |
+| stderr  | sidecar → main | Respuestas y eventos JSON, uno por línea |
+| stdout  | sidecar → main | Solo PCM binario. Nunca texto            |
 
 Si stdin se cierra, el sidecar termina.
 
@@ -14,16 +14,21 @@ Si stdin se cierra, el sidecar termina.
 
 Objeto JSON con el campo `cmd`. Los campos extra se ignoran.
 
-| `cmd` | Estado | Respuesta |
-|---|---|---|
+| `cmd`  | Estado       | Respuesta                                                                                  |
+| ------ | ------------ | ------------------------------------------------------------------------------------------ |
 | `list` | Implementado | Un evento `devices` (precedido de un `warning` por cada endpoint que no se pudo describir) |
-| `open` | Tarea 08 | `error` con `code: "not_implemented"` |
-| `start` | Tarea 08 | `error` con `code: "not_implemented"` |
-| `stop` | Tarea 08 | `error` con `code: "not_implemented"` |
+| `open` | Implementado | `opened` o `stream_error` con `reason: "open_failed"`                                      |
+| `stop` | Implementado | `stopped` (también si el stream no existía)                                                |
 
 ```json
 {"cmd":"list"}
+{"cmd":"open","streamId":1,"deviceId":"wasapi:{0.0.0.00000000}.{...}","kind":"render"}
+{"cmd":"stop","streamId":1}
 ```
+
+- `streamId` (1–255) lo elige main; un `open` con un id ya abierto reemplaza el stream anterior.
+- `kind: "render"` abre el endpoint en loopback (lo que suena); `capture`, el micrófono. El stream arranca capturando al abrirse con el formato de mezcla por defecto.
+- En loopback WASAPI no entrega nada mientras hay silencio: main rellena ceros por reloj (ver `src/main/audio/silence.ts`).
 
 ## Eventos (stderr)
 
@@ -34,10 +39,20 @@ Objeto JSON con el campo `type`.
 Endpoints **activos** en este momento (WASAPI `DEVICE_STATE_ACTIVE`); los desconectados o deshabilitados no aparecen. Salidas primero, luego entradas. Cada elemento sigue `AudioDevice` de `src/shared/types.ts`:
 
 ```json
-{"type":"devices","devices":[
-  {"id":"wasapi:{0.0.0.00000000}.{db09e9e0-...}","name":"Altavoces","groupName":"Realtek(R) Audio",
-   "kind":"render","isDefault":true,"channels":2,"sampleRate":48000}
-]}
+{
+  "type": "devices",
+  "devices": [
+    {
+      "id": "wasapi:{0.0.0.00000000}.{db09e9e0-...}",
+      "name": "Altavoces",
+      "groupName": "Realtek(R) Audio",
+      "kind": "render",
+      "isDefault": true,
+      "channels": 2,
+      "sampleRate": 48000
+    }
+  ]
+}
 ```
 
 - `id`: id estable del endpoint (`DeviceId` de cpal).
@@ -45,30 +60,52 @@ Endpoints **activos** en este momento (WASAPI `DEVICE_STATE_ACTIVE`); los descon
 - `kind`: `render` (se captura en loopback) o `capture` (micrófono, línea).
 - `channels` / `sampleRate`: formato de mezcla por defecto del endpoint.
 
-### `warning`
+### `opened` / `stopped`
 
 ```json
-{"type":"warning","message":"skipped a Render endpoint: ..."}
+{"type":"opened","streamId":1,"sampleRate":48000,"channels":2}
+{"type":"stopped","streamId":1}
+```
+
+### `stream_error`
+
+El stream ya no existe cuando llega este evento.
+
+```json
+{ "type": "stream_error", "streamId": 1, "reason": "device_lost", "message": "..." }
+```
+
+| `reason`        | Cuándo                                                             |
+| --------------- | ------------------------------------------------------------------ |
+| `open_failed`   | Id desconocido, sin formato por defecto o WASAPI rechazó el stream |
+| `device_lost`   | El dispositivo se desconectó durante la captura                    |
+| `stream_failed` | Cualquier otro error fatal del stream                              |
+
+### `warning`
+
+No fatal: endpoints que no se pudieron describir, y durante la captura xruns, cambios de formato del dispositivo o falta de prioridad de tiempo real.
+
+```json
+{ "type": "warning", "message": "skipped a Render endpoint: ..." }
 ```
 
 ### `error`
 
 ```json
-{"type":"error","code":"bad_command","message":"unknown variant `nope`, ..."}
+{ "type": "error", "code": "bad_command", "message": "unknown variant `nope`, ..." }
 ```
 
-| `code` | Cuándo |
-|---|---|
-| `bad_command` | La línea no es JSON válido o `cmd` no existe |
-| `not_implemented` | Comando del protocolo aún no implementado; `message` es el comando |
+| `code`               | Cuándo                                        |
+| -------------------- | --------------------------------------------- |
+| `bad_command`        | La línea no es JSON válido o `cmd` no existe  |
 | `enumeration_failed` | El host de audio no pudo listar los endpoints |
 
-## PCM (stdout, tarea 08)
+## PCM (stdout)
 
-Secuencia de frames binarios, cada uno con cabecera little-endian seguida de las muestras:
+Secuencia de bloques binarios, cada uno con cabecera little-endian de 7 bytes seguida de las muestras intercaladas:
 
 ```
-[streamId u8][frameCount u32][frameCount × channels × f32le]
+[streamId u8][channels u16][frameCount u32][frameCount × channels × f32le]
 ```
 
-`channels` es el del stream abierto con `open`.
+`channels` va en cada bloque porque stdout y stderr son tuberías distintas: el primer bloque puede llegar antes que el `opened`. Los formatos enteros del dispositivo (i16, i32, u8) se convierten a f32 en el sidecar.

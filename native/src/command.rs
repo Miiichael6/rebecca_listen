@@ -1,29 +1,23 @@
 //! Commands read from stdin, one JSON object per line: `{"cmd": "list"}`.
-//!
-//! Only `list` does something for now; `open`, `start` and `stop` are parsed so
-//! main gets a precise `not_implemented` instead of a parse error (task 08).
 
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(tag = "cmd", rename_all = "lowercase")]
+use crate::device::DeviceKind;
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(tag = "cmd", rename_all = "lowercase", rename_all_fields = "camelCase")]
 pub enum Command {
     List,
-    Open,
-    Start,
-    Stop,
-}
-
-impl Command {
-    /// The wire name, as it appears in the `cmd` field.
-    pub fn name(self) -> &'static str {
-        match self {
-            Command::List => "list",
-            Command::Open => "open",
-            Command::Start => "start",
-            Command::Stop => "stop",
-        }
-    }
+    /// Opens a device and starts streaming its PCM on stdout right away.
+    Open {
+        stream_id: u8,
+        device_id: String,
+        /// `render` is captured in loopback, `capture` as a normal input.
+        kind: DeviceKind,
+    },
+    Stop {
+        stream_id: u8,
+    },
 }
 
 /// Parses one stdin line. The error is a human-readable message for main's log.
@@ -34,6 +28,7 @@ pub fn parse_command(line: &str) -> Result<Command, String> {
 #[cfg(test)]
 mod tests {
     use super::{Command, parse_command};
+    use crate::device::DeviceKind;
 
     #[test]
     fn parses_a_valid_command() {
@@ -41,9 +36,27 @@ mod tests {
     }
 
     #[test]
+    fn parses_open_with_camel_case_fields() {
+        let line = r#"{"cmd":"open","streamId":1,"deviceId":"wasapi:abc","kind":"render"}"#;
+        assert_eq!(
+            parse_command(line),
+            Ok(Command::Open {
+                stream_id: 1,
+                device_id: "wasapi:abc".to_owned(),
+                kind: DeviceKind::Render
+            })
+        );
+    }
+
+    #[test]
     fn ignores_extra_fields() {
-        let line = r#"{"cmd":"open","deviceId":"wasapi:abc","loopback":true}"#;
-        assert_eq!(parse_command(line), Ok(Command::Open));
+        let line = r#"{"cmd":"stop","streamId":2,"extra":true}"#;
+        assert_eq!(parse_command(line), Ok(Command::Stop { stream_id: 2 }));
+    }
+
+    #[test]
+    fn rejects_open_without_a_device() {
+        assert!(parse_command(r#"{"cmd":"open","streamId":1,"kind":"render"}"#).is_err());
     }
 
     #[test]
