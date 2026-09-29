@@ -52,7 +52,7 @@ Además se recortó dentro de las tareas del núcleo:
 
 ## Decisiones pendientes (bloquean tareas)
 
-- [ ] **D1** El sidecar de captura (§3.2) necesita **Rust** (`rustup`, toolchain `stable-x86_64-pc-windows-msvc`) y **Visual Studio Build Tools** con "Desktop development with C++" (enlazador MSVC y Windows SDK). Hoy no están instalados (`cargo` no existe y en `Microsoft Visual Studio` solo hay `Installer/` y `Shared/`). ¿Los instalas tú (recomendado, es lo que pide la spec) o prefieres otro enfoque de captura? → bloquea **05** y, por cadena, todo lo que necesita audio real (06–10, 13 en adelante)
+- [x] **D1** ~~Toolchain de Rust para el sidecar de captura (§3.2).~~ **Resuelta 2026-09-29:** instalados Rust 1.98.1 (`stable-x86_64-pc-windows-msvc`) y Visual Studio Community 2022 con el workload VCTools. `cargo` compila y enlaza; `cpal` 0.18.2 enumera los dispositivos sin la crate `windows`. Desbloquea **05** y la cadena de audio (06–10, 13 en adelante).
 - [ ] **D2** Actualizaciones: ¿hay un repositorio (p. ej. GitHub Releases) para publicar con `electron-updater`, o se quita `electron-updater` y el bloque `publish` que hoy apunta a `example.com`? (la pestaña About y "Check for updates" ya están eliminados) → afecta **35** (paso 1)
 - [ ] **D3** Firma del instalador: ¿se distribuye sin firmar (Windows SmartScreen avisará al instalar) o hay un certificado de firma de código? → afecta **35** (paso 1)
 
@@ -64,7 +64,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 02 | [Canales IPC tipados, defaults y preload](done/02_ipc_tipado_y_defaults.md) | 1 Base | 01 | ✅ Terminada |
 | 03 | [Settings persistentes y logging](done/03_settings_y_log.md) | 1 Base | 02 | ✅ Terminada |
 | 04 | [Layout estático de la ventana principal](done/04_layout_principal_estatico.md) | 1 Base | 01, 02 | ✅ Terminada |
-| 05 | [Sidecar Rust: enumeración de dispositivos activos](pending/05_sidecar_rust_enumeracion.md) | 2 Dispositivos | 02 | ⛔ Bloqueada (D1) |
+| 05 | [Sidecar Rust: enumeración de dispositivos activos](done/05_sidecar_rust_enumeracion.md) | 2 Dispositivos | 02 | ✅ Terminada |
 | 06 | [Sondeo de dispositivos y motor de audio en main](pending/06_hotplug_y_motor_en_main.md) | 2 Dispositivos | 05 | ⬜ Pendiente |
 | 07 | [Desplegable Source completo](pending/07_desplegable_source.md) | 2 Dispositivos | 04, 06 | ⬜ Pendiente |
 | 08 | [Stream PCM del sidecar a main](pending/08_stream_pcm_sidecar.md) | 3 Captura | 06 | ⬜ Pendiente |
@@ -86,7 +86,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 35 | [Empaquetado Windows (NSIS)](pending/35_empaquetado_nsis.md) | 12 Empaquetado | 17 | ⬜ Pendiente |
 | 36 | [Pruebas de aceptación y rendimiento](pending/36_pruebas_de_aceptacion.md) | 12 Empaquetado | 35 | ⬜ Pendiente |
 
-\* **No dependen del sidecar (D1)**: 11 y 12 se pueden hacer mientras D1 sigue abierta. Orden práctico si D1 tarda: 01 → 02 → 03 → 04 → 11 → 12 y luego 05 en adelante.
+\* **No dependen del sidecar**: 11 y 12 se adelantan a su fase porque solo necesitan 02 y 03. Con D1 ya resuelta (2026-09-29) el orden natural vuelve a ser el numérico.
 
 Si una tarea se subdivide, sus subtareas van en filas justo debajo de ella: `| 13.1 | ↳ [Título](pending/13.1_nombre.md) | 4 Grabación | 13 | ⬜ Pendiente |`
 
@@ -100,8 +100,8 @@ Base y trabajo sin sidecar
            ├→ 04
            └→ 11
 
-Audio (requiere D1)
-  02 → 05⛔ → 06 ─┬→ 07 (+04)
+Audio
+  02 → 05 → 06 ─┬→ 07 (+04)
                   └→ 08 → 09 ─┬→ 10 (+04)
                               └→ 15
 

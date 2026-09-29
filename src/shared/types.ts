@@ -17,7 +17,7 @@ export type DeviceKind = 'render' | 'capture'
  * (see task 05), so there is no `state` field.
  */
 export interface AudioDevice {
-  /** Full endpoint name + kind; cpal does not expose the internal id. */
+  /** Stable WASAPI endpoint id from cpal, e.g. `wasapi:{0.0.0.00000000}.{guid}`. */
   id: string
   /** Endpoint name without the hardware group, e.g. "Altavoces". */
   name: string
