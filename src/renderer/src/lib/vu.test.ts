@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VU_FLOOR_DB, VU_SEGMENTS } from '@shared/defaults'
-import { litSegments, segmentDb, zoneOf } from './vu'
+import { litSegments, rowLevels, segmentDb, zoneOf } from './vu'
 
 describe('litSegments', () => {
   it('is empty at or below the floor and full at 0 dBFS', () => {
@@ -29,5 +29,16 @@ describe('segmentDb', () => {
   it('ends at 0 dBFS on the last segment', () => {
     expect(segmentDb(VU_SEGMENTS - 1)).toBe(0)
     expect(segmentDb(0)).toBeCloseTo(VU_FLOOR_DB + -VU_FLOOR_DB / VU_SEGMENTS)
+  })
+})
+
+describe('rowLevels', () => {
+  it('shows a mono source on both rows', () => {
+    expect(rowLevels([-20])).toEqual([-20, -20])
+  })
+
+  it('keeps stereo channels apart and reads nothing as silence', () => {
+    expect(rowLevels([-20, -30])).toEqual([-20, -30])
+    expect(rowLevels([])).toEqual([VU_FLOOR_DB, VU_FLOOR_DB])
   })
 })

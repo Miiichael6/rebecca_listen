@@ -1,27 +1,24 @@
 /**
  * Drawing of the live waveform (spec §4.3): faint grey grid and a blue filled
- * shape mirrored around the centre line.
+ * shape mirrored around the centre line, newest column at the right edge.
  *
- * Kept apart from the component so React only owns the canvas element and its
- * size, and the drawing can be reasoned about on its own.
+ * Kept apart from the component so React only owns the canvas element, and the
+ * drawing can be reasoned about on its own.
  */
 
-import type { WaveFrame } from '@shared/types'
+import type { CanvasSize } from '../hooks/useCanvasPainter'
+import type { WaveBuffer } from './waveBuffer'
 
 /** Side of the grid squares, in CSS pixels. */
 const GRID_PX = 32
 
-/** Width of one peak column, in CSS pixels. Buckets older than the width scroll out. */
+/** Width of one peak column, in CSS pixels. Columns older than the width scroll out. */
 export const COLUMN_PX = 2
 
-export interface CanvasSize {
-  width: number
-  height: number
-}
-
-/** How many buckets fit in a canvas of this width. */
-export function columnsFor(width: number): number {
-  return Math.max(1, Math.floor(width / COLUMN_PX))
+export interface WaveColors {
+  background: string
+  grid: string
+  wave: string
 }
 
 function paintGrid(context: CanvasRenderingContext2D, size: CanvasSize, color: string): void {
@@ -40,28 +37,30 @@ function paintGrid(context: CanvasRenderingContext2D, size: CanvasSize, color: s
 }
 
 /**
- * Paints the frame right-aligned, so the newest bucket sits at the right edge
- * and the older ones scroll out on the left.
+ * Paints the buffer right-aligned. `scrollPx` shifts every column right: the
+ * columns of a frame that just arrived start past the edge and slide in.
  */
 export function paintWaveform(
   context: CanvasRenderingContext2D,
   size: CanvasSize,
-  frame: WaveFrame,
-  colors: { background: string; grid: string; wave: string }
+  buffer: WaveBuffer,
+  scrollPx: number,
+  colors: WaveColors
 ): void {
   context.fillStyle = colors.background
   context.fillRect(0, 0, size.width, size.height)
   paintGrid(context, size, colors.grid)
 
   const middle = size.height / 2
-  const columns = Math.min(frame.max.length, columnsFor(size.width))
-  const first = frame.max.length - columns
-
   context.fillStyle = colors.wave
   context.fillRect(0, middle, size.width, 1)
-  for (let index = 0; index < columns; index += 1) {
-    const top = middle - Math.min(1, Math.max(0, frame.max[first + index])) * middle
-    const bottom = middle - Math.max(-1, Math.min(0, frame.min[first + index])) * middle
-    context.fillRect(index * COLUMN_PX, top, COLUMN_PX - 1, Math.max(1, bottom - top))
+
+  const visible = Math.min(buffer.length, Math.ceil((size.width + scrollPx) / COLUMN_PX))
+  for (let age = 0; age < visible; age += 1) {
+    const { min, max } = buffer.column(age)
+    const x = size.width + scrollPx - (age + 1) * COLUMN_PX
+    const top = middle - Math.min(1, Math.max(0, max)) * middle
+    const bottom = middle - Math.max(-1, Math.min(0, min)) * middle
+    context.fillRect(x, top, COLUMN_PX - 1, Math.max(1, bottom - top))
   }
 }

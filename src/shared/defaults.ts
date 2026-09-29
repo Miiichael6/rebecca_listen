@@ -38,6 +38,9 @@ export const DEFAULT_UI_STATE: UiState = { sourceListExpanded: false }
 export const LEVEL_PERCENT: NumericRange = { min: 0, max: 200, step: 1 }
 export const DEFAULT_LEVEL_PERCENT = 100
 
+/** Slider moves are sent to main at most this often (~30 Hz, the meter rate). */
+export const LEVEL_SEND_MS = 33
+
 // ---------------------------------------------------------------------------
 // Files (spec §9.1-§9.4)
 // ---------------------------------------------------------------------------
@@ -106,6 +109,9 @@ export const METER_FLOOR_DB = -90
 /** Waveform columns in each `wave:frame`: 30 fps × 2 = 60 columns per second. */
 export const WAVE_COLUMNS_PER_FRAME = 2
 
+/** Waveform columns the renderer keeps: wide enough for an 8K-wide window. */
+export const WAVE_HISTORY_COLUMNS = 4096
+
 /** Device list polling interval; replaces the COM hot-plug notifications. */
 export const DEVICE_POLL_MS = 2000
 
@@ -147,6 +153,15 @@ export const VU_FLOOR_DB = -60
 
 /** How long the VU peak indicator holds before it starts falling. */
 export const VU_PEAK_HOLD_MS = 1000
+
+/** How fast a held peak falls once the hold is over. */
+export const VU_PEAK_FALL_DB_PER_S = 20
+
+/**
+ * With no meter frame for this long (window just shown, source reopening,
+ * device lost) the VU meter drops to silence instead of freezing.
+ */
+export const METER_STALE_MS = 250
 
 // ---------------------------------------------------------------------------
 // Logging (spec §1.8, §13)

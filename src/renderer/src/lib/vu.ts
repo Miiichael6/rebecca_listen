@@ -19,6 +19,12 @@ export function zoneOf(db: number): VuZone {
   return 'red'
 }
 
+/** Levels of the L and R rows: a mono source shows the same on both, nothing reads as silence. */
+export function rowLevels(channels: number[]): [number, number] {
+  const left = channels[0] ?? VU_FLOOR_DB
+  return [left, channels[1] ?? left]
+}
+
 /** How many segments a level lights up, from 0 to `VU_SEGMENTS`. */
 export function litSegments(db: number): number {
   if (db <= VU_FLOOR_DB) return 0

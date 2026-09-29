@@ -2,13 +2,13 @@
  * Main window (spec §4): Source, Level with the VU meter, waveform, timer,
  * status bar, recording list and transport bar, from top to bottom.
  *
- * Source, timer, status, list and transport are live. Level, VU meter and
- * waveform stay idle until task 10. ▶ plays the selected recording inside the
+ * Everything is live: Level drives the monitor gain in main, and the VU meter
+ * and waveform draw its frames. ▶ plays the selected recording inside the
  * app; while it plays the timer shows its position.
  */
 
 import { useEffect } from 'react'
-import type { HistoryItem, WaveFrame } from '@shared/types'
+import type { HistoryItem, MeterFrame, WaveFrame } from '@shared/types'
 import { LevelSlider } from '../../components/LevelSlider'
 import { RecordingList } from '../../components/RecordingList'
 import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
@@ -22,15 +22,18 @@ import { usePlayerStore } from '../../store/player'
 import { loadRecorder, useRecorderStore } from '../../store/recorder'
 import styles from './MainWindow.module.css'
 
-const SILENT_WAVE: WaveFrame = { min: [], max: [] }
-const SILENT_DB: number[] = []
+const onMeterFrame = (listener: (frame: MeterFrame) => void): (() => void) =>
+  window.api.on('meter:frame', listener)
+const onWaveFrame = (listener: (frame: WaveFrame) => void): (() => void) =>
+  window.api.on('wave:frame', listener)
 
 /** Id of the pseudo row of the file being written. */
 const RECORDING_ROW = 'recording'
 
 export function MainWindow(): React.JSX.Element {
-  const { source, sourceListExpanded, session, items, selectedId, notice } = useRecorderStore()
-  const { setSource, setSourceListExpanded, select, dismissNotice } = useRecorderStore()
+  const { source, sourceListExpanded, level, session, items, selectedId, notice } =
+    useRecorderStore()
+  const { setSource, setSourceListExpanded, setLevel, select, dismissNotice } = useRecorderStore()
   const { devices, refresh: refreshDevices } = useDevicesStore()
   const { playingId, paused, positionMs, play, pause, stop } = usePlayerStore()
   const recording = session.state !== 'idle'
@@ -81,9 +84,9 @@ export function MainWindow(): React.JSX.Element {
         onChange={(next) => void setSource(next)}
         onExpandedChange={(expanded) => void setSourceListExpanded(expanded)}
       />
-      <LevelSlider percent={100} />
-      <VuMeter rmsDb={SILENT_DB} peakDb={SILENT_DB} />
-      <Waveform frame={SILENT_WAVE} />
+      <LevelSlider percent={level} onChange={setLevel} />
+      <VuMeter subscribe={onMeterFrame} />
+      <Waveform subscribe={onWaveFrame} />
       <Timer
         elapsedMs={!recording && playingId ? positionMs : session.elapsedMs}
         paused={recording ? session.state === 'paused' : paused}

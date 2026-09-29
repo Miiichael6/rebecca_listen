@@ -45,6 +45,7 @@ export interface IpcInvoke {
   'source:get': { req: void; res: SourceSelection }
   'source:set': { req: SourceSelection; res: void }
   /** Gain of the Level slider, in percent (see `LEVEL_PERCENT`). */
+  'level:get': { req: void; res: number }
   'level:set': { req: number; res: void }
 
   'session:record': { req: void; res: SessionSnapshot }
@@ -125,6 +126,7 @@ export const INVOKE_CHANNELS = [
   'devices:list',
   'source:get',
   'source:set',
+  'level:get',
   'level:set',
   'session:record',
   'session:pause',

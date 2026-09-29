@@ -1,45 +1,28 @@
 .meter {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   padding: 6px var(--gap-x) 0;
 }
 
-.row {
+.channels {
+  flex: none;
   display: flex;
-  align-items: center;
-  gap: 4px;
+  flex-direction: column;
+  gap: 2px;
+  width: var(--width-label);
 }
 
 .channel {
-  flex: none;
-  width: var(--width-label);
+  height: var(--height-vu-row);
   text-align: right;
   font-size: var(--font-size-small);
-  line-height: 1;
+  line-height: var(--height-vu-row);
   color: var(--color-text-muted);
 }
 
-.segments {
+/* Both rows plus the 2px gap between them (`ROW_GAP_PX` in lib/vuPainter). */
+.canvas {
   flex: 1;
-  display: flex;
-  gap: 1px;
-  height: var(--height-vu-row);
-}
-
-.segment {
-  flex: 1;
-  background: var(--color-vu-off);
-}
-
-.green {
-  background: var(--color-vu-green);
-}
-
-.yellow {
-  background: var(--color-vu-yellow);
-}
-
-.red {
-  background: var(--color-vu-red);
+  min-width: 0;
+  height: calc(var(--height-vu-row) * 2 + 2px);
 }

@@ -1,6 +1,7 @@
 /**
  * Level row (spec §4.2): horizontal blue slider, 0-200 %, that applies gain to
- * the recorded audio. Double click resets it to the default.
+ * the recorded audio. Double click resets it to the default; the tooltip shows
+ * the percentage.
  */
 
 import { LEVEL_PERCENT, DEFAULT_LEVEL_PERCENT } from '@shared/defaults'
@@ -36,6 +37,7 @@ export function LevelSlider({
         value={percent}
         disabled={disabled}
         aria-label="Level"
+        title={`${percent} %`}
         onChange={(event) => onChange?.(event.target.valueAsNumber)}
         onDoubleClick={() => onChange?.(DEFAULT_LEVEL_PERCENT)}
       />

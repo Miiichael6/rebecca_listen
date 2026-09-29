@@ -41,6 +41,7 @@ export function registerAudioIpc(): void {
     settings.setSource(source)
     refreshMonitor()
   })
+  handle('level:get', () => settings.getLevel())
   handle('level:set', (percent) => {
     settings.setLevel(percent)
     setMonitorLevel(settings.getLevel())
