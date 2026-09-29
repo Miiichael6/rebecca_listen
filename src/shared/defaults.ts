@@ -103,6 +103,12 @@ export const FILE_PROGRESS_MS = 500
 export const VU_GREEN_MAX_DB = -12
 export const VU_YELLOW_MAX_DB = -3
 
+/** Segments per VU row (§4.2). Two rows, L and R. */
+export const VU_SEGMENTS = 40
+
+/** Quietest level the VU meter draws; below it no segment lights up. */
+export const VU_FLOOR_DB = -60
+
 /** How long the VU peak indicator holds before it starts falling. */
 export const VU_PEAK_HOLD_MS = 1000
 

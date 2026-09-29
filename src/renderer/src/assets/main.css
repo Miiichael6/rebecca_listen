@@ -1,27 +1,28 @@
-/* Base styles. Visual style: Windows 11 look, light theme only (spec §14). */
-:root {
-  --color-background: #ffffff;
-  --color-text: #1a1a1a;
-  --color-text-muted: #6b6b6b;
-  --color-accent: #1e7bc4;
-  --color-record: #d9383a;
-  --color-bar: #127c8c;
-  --color-output: #3a8a1e;
-  --color-input: #c0282d;
-  --font-ui:
-    'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-}
+/* Base styles. The tokens live in `theme.css` (spec §14). */
+@import './theme.css';
 
 * {
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   margin: 0;
   font-family: var(--font-ui);
-  font-size: 13px;
+  font-size: var(--font-size);
   color: var(--color-text);
   background-color: var(--color-background);
   overflow: hidden;
   user-select: none;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
 }

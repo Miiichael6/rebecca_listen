@@ -1,0 +1,39 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--height-statusbar);
+  padding: 0 6px;
+  background: var(--color-statusbar);
+  color: var(--color-statusbar-text);
+  font-size: var(--font-size-small);
+}
+
+.state {
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+.idle {
+  background: var(--color-badge-muted);
+}
+
+.recording {
+  background: var(--color-record);
+}
+
+.paused {
+  background: var(--color-paused);
+}
+
+.count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--color-badge-muted);
+}

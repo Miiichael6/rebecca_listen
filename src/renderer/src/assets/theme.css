@@ -1,0 +1,69 @@
+/**
+ * Design tokens of the app (spec §14): "classic Windows 11" look, white
+ * background, Segoe UI 12-13 px and soft greys for labels.
+ *
+ * Light theme only, like the original. Because every component reads these
+ * variables instead of writing colors by hand, a dark theme would only be a
+ * second block redefining them.
+ *
+ * The brand colors mirror `COLORS` in `@shared/defaults`.
+ */
+:root {
+  /* Brand (spec §14) */
+  --color-primary: #1e7bc4;
+  --color-record: #d9383a;
+  --color-teal: #127c8c;
+  --color-output-device: #3a8a1e;
+  --color-input-device: #c0282d;
+
+  /* Surfaces */
+  --color-background: #ffffff;
+  --color-surface-sunken: #f5f7f9;
+  --color-row-odd: #ffffff;
+  --color-row-even: #f2f5f8;
+  --color-row-selected: #e8f1fa;
+  --color-statusbar: #5f6b76;
+  --color-paused: #d08700;
+  --color-statusbar-text: #ffffff;
+  --color-badge-muted: #8b98a3;
+
+  /* Text */
+  --color-text: #1a1a1a;
+  --color-text-muted: #6b6b6b;
+  --color-text-disabled: #9aa0a6;
+
+  /* Lines and controls */
+  --color-border: #d0d7de;
+  --color-border-strong: #adb5bd;
+  --color-control-background: #ffffff;
+  --color-control-disabled: #eceff1;
+  --color-track: #2b2f33;
+  --color-grid: #e4e8ec;
+
+  /* VU meter (thresholds live in `@shared/defaults`) */
+  --color-vu-off: #c6cbd0;
+  --color-vu-green: #3a8a1e;
+  --color-vu-yellow: #e0a800;
+  --color-vu-red: #c0282d;
+
+  /* Typography */
+  --font-ui: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'Cascadia Mono', Consolas, 'Courier New', monospace;
+  --font-size: 13px;
+  --font-size-small: 11px;
+  --font-size-timer: 26px;
+
+  /* Spacing and strip heights, measured on 12_main_window_recording.png */
+  --gap-x: 12px;
+  /* Right-aligned column that keeps the Source and Level labels in line. */
+  --width-label: 42px;
+  --gap-y: 8px;
+  --height-control: 26px;
+  --height-vu-row: 7px;
+  --height-waveform: 62px;
+  --height-timer: 34px;
+  --height-statusbar: 22px;
+  --height-row: 22px;
+  --height-transport: 40px;
+  --radius-control: 3px;
+}

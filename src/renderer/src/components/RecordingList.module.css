@@ -1,0 +1,44 @@
+.list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* The zebra keeps going past the last row, like the original. */
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-row-odd) 0 var(--height-row),
+    var(--color-row-even) var(--height-row) calc(var(--height-row) * 2)
+  );
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap-x);
+  height: var(--height-row);
+  padding: 0 6px 0 4px;
+  border-left: 3px solid transparent;
+}
+
+/* The stripes come from the container, so a row only paints when selected. */
+.selected {
+  border-left-color: var(--color-primary);
+  background: var(--color-row-selected);
+  color: var(--color-primary);
+}
+
+/* The file still being written (§4.6). */
+.active {
+  color: var(--color-primary);
+}
+
+.name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.duration {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,45 @@
+.meter {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px var(--gap-x) 0;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.channel {
+  flex: none;
+  width: var(--width-label);
+  text-align: right;
+  font-size: var(--font-size-small);
+  line-height: 1;
+  color: var(--color-text-muted);
+}
+
+.segments {
+  flex: 1;
+  display: flex;
+  gap: 1px;
+  height: var(--height-vu-row);
+}
+
+.segment {
+  flex: 1;
+  background: var(--color-vu-off);
+}
+
+.green {
+  background: var(--color-vu-green);
+}
+
+.yellow {
+  background: var(--color-vu-yellow);
+}
+
+.red {
+  background: var(--color-vu-red);
+}

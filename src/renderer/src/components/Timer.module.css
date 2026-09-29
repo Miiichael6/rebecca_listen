@@ -1,0 +1,21 @@
+.timer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--height-timer);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-timer);
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Soft blink while paused (§4.4). */
+.paused {
+  animation: fade 1.4s ease-in-out infinite;
+}
+
+@keyframes fade {
+  50% {
+    opacity: 0.35;
+  }
+}

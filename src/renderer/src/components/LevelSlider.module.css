@@ -1,0 +1,50 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-x);
+  padding: var(--gap-y) var(--gap-x) 0;
+}
+
+.label {
+  flex: none;
+  width: var(--width-label);
+  text-align: right;
+  color: var(--color-text-muted);
+}
+
+.slider {
+  flex: 1;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  /* Blue up to the thumb, dark track after it (screenshot 12). */
+  background: linear-gradient(
+    to right,
+    var(--color-primary) 0 var(--filled),
+    var(--color-track) var(--filled) 100%
+  );
+}
+
+.slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 2px solid var(--color-primary);
+  border-radius: 50%;
+  background: var(--color-background);
+}
+
+.slider:disabled::-webkit-slider-runnable-track {
+  background: var(--color-border);
+}
+
+.slider:disabled::-webkit-slider-thumb {
+  border-color: var(--color-border-strong);
+}
