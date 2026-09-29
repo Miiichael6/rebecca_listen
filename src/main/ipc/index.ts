@@ -2,6 +2,7 @@
 
 import { app } from 'electron'
 import { APP_NAME } from '@shared/appInfo'
+import { registerSettingsIpc } from './settings'
 import { handle } from './typed'
 
 export function registerIpc(): void {
@@ -10,4 +11,6 @@ export function registerIpc(): void {
     name: APP_NAME,
     version: app.getVersion()
   }))
+
+  registerSettingsIpc()
 }

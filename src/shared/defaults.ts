@@ -107,6 +107,16 @@ export const VU_YELLOW_MAX_DB = -3
 export const VU_PEAK_HOLD_MS = 1000
 
 // ---------------------------------------------------------------------------
+// Logging (spec §1.8, §13)
+// ---------------------------------------------------------------------------
+
+/** `main.log` is rotated once it passes this size. */
+export const LOG_MAX_SIZE_BYTES = 5 * 1024 * 1024
+
+/** Log files kept in total: `main.log` plus its archives (5 MB x 3 of §13). */
+export const LOG_MAX_FILES = 3
+
+// ---------------------------------------------------------------------------
 // Colors (spec §14). The CSS mirrors these as variables in `:root`.
 // ---------------------------------------------------------------------------
 
