@@ -16,7 +16,7 @@ import { WavWriter } from './encoder/WavWriter'
 import type { AudioStream } from './engine/AudioEngine'
 import { audioEngine } from './engine/SidecarAudioEngine'
 import { resolveForRecording } from './devices'
-import { silenceBefore, type Timeline } from './silence'
+import { addSilence, silenceBefore, type Timeline } from './silence'
 
 interface Active {
   device: AudioDevice
@@ -86,18 +86,16 @@ export async function record(): Promise<SessionSnapshot> {
       sampleRate: stream.sampleRate,
       startMs: now,
       lastArrivalMs: now,
-      framesWritten: 0
+      framesWritten: 0,
+      gaps: 0,
+      silenceFrames: 0
     }
     const loopback = device.kind === 'render'
 
     stream.onData((samples) => {
       const frames = samples.length / stream.channels
       const arrival = Date.now()
-      if (loopback) {
-        const silence = silenceBefore(timeline, arrival, frames)
-        writer.writeSilence(silence)
-        timeline.framesWritten += silence
-      }
+      if (loopback) fillSilence(writer, timeline, silenceBefore(timeline, arrival, frames))
       writer.write(samples)
       timeline.framesWritten += frames
       timeline.lastArrivalMs = arrival
@@ -133,6 +131,11 @@ export async function stop(): Promise<SessionSnapshot> {
   return snapshot()
 }
 
+function fillSilence(writer: WavWriter, timeline: Timeline, frames: number): void {
+  writer.writeSilence(frames)
+  addSilence(timeline, frames)
+}
+
 /** Closes the file and lists it. `warning` is shown when the stop was not asked for. */
 async function finish(warning: string | null): Promise<void> {
   const current = active
@@ -142,7 +145,9 @@ async function finish(warning: string | null): Promise<void> {
 
   await current.stream.stop().catch((error: Error) => logger.warn(`stream stop: ${error.message}`))
   const { writer, timeline } = current
-  if (current.device.kind === 'render') writer.writeSilence(silenceBefore(timeline, Date.now(), 0))
+  if (current.device.kind === 'render') {
+    fillSilence(writer, timeline, silenceBefore(timeline, Date.now(), 0))
+  }
 
   try {
     writer.close()
@@ -156,7 +161,11 @@ async function finish(warning: string | null): Promise<void> {
       createdAt: current.createdAt,
       source: current.source
     })
-    logger.info(`recording saved: ${writer.path} (${Math.round(writer.durationMs)} ms)`)
+    const silenceMs = Math.round((timeline.silenceFrames / timeline.sampleRate) * 1000)
+    logger.info(
+      `recording saved: ${writer.path} (${Math.round(writer.durationMs)} ms, ` +
+        `${timeline.gaps} gaps filled with ${silenceMs} ms of silence)`
+    )
     if (warning) emit.notice({ level: 'warn', message: warning })
   } catch (error) {
     fail(`Could not save the recording: ${(error as Error).message}`)

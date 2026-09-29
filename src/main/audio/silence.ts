@@ -19,6 +19,10 @@ export interface Timeline {
   lastArrivalMs: number
   /** Frames written so far, silence included. */
   framesWritten: number
+  /** Pauses filled with silence so far, for the log. */
+  gaps: number
+  /** Frames of silence written so far, for the log. */
+  silenceFrames: number
 }
 
 /**
@@ -29,4 +33,12 @@ export function silenceBefore(timeline: Timeline, nowMs: number, incomingFrames:
   if (nowMs - timeline.lastArrivalMs < LOOPBACK_GAP_MS) return 0
   const expected = Math.round(((nowMs - timeline.startMs) / 1000) * timeline.sampleRate)
   return Math.max(0, expected - timeline.framesWritten - incomingFrames)
+}
+
+/** Counts `frames` of silence written into the timeline. */
+export function addSilence(timeline: Timeline, frames: number): void {
+  if (frames <= 0) return
+  timeline.framesWritten += frames
+  timeline.silenceFrames += frames
+  timeline.gaps += 1
 }

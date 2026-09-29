@@ -34,6 +34,18 @@ describe('FrameDemuxer', () => {
     expect(Array.from(blocks[0].samples)).toEqual([0.5, 0.25, -1])
   })
 
+  it('rebuilds a header split across three chunks', () => {
+    const { blocks, demuxer } = collect()
+    const data = block(3, 2, [0.5, -0.5])
+    demuxer.push(data.subarray(0, 2))
+    demuxer.push(data.subarray(2, 5))
+    expect(blocks).toHaveLength(0)
+    demuxer.push(data.subarray(5))
+    expect(blocks).toHaveLength(1)
+    expect(blocks[0]).toMatchObject({ streamId: 3, channels: 2 })
+    expect(Array.from(blocks[0].samples)).toEqual([0.5, -0.5])
+  })
+
   it('reads several interleaved streams from one chunk', () => {
     const { blocks, demuxer } = collect()
     demuxer.push(Buffer.concat([block(1, 2, [0, 0]), block(2, 1, [0.5]), block(1, 2, [1, 1])]))
@@ -44,5 +56,31 @@ describe('FrameDemuxer', () => {
     const { blocks, demuxer } = collect()
     demuxer.push(Buffer.concat([block(1, 2, []), block(1, 2, [0.5, 0.5])]))
     expect(blocks.map((b) => b.samples.length)).toEqual([0, 2])
+  })
+
+  it('rebuilds a 1 kHz stereo sine exactly, whatever the chunk size', () => {
+    const rate = 48_000
+    const frames = rate / 10
+    const sine = new Float32Array(frames * 2)
+    for (let frame = 0; frame < frames; frame += 1) {
+      const value = Math.sin((2 * Math.PI * 1000 * frame) / rate)
+      sine[frame * 2] = value
+      sine[frame * 2 + 1] = -value
+    }
+    const blockFrames = 480
+    const blocksOut: Buffer[] = []
+    for (let start = 0; start < frames; start += blockFrames) {
+      blocksOut.push(block(1, 2, Array.from(sine.subarray(start * 2, (start + blockFrames) * 2))))
+    }
+    const data = Buffer.concat(blocksOut)
+
+    for (const chunkSize of [1, 7, 1000, 4093, data.length]) {
+      const { blocks, demuxer } = collect()
+      for (let offset = 0; offset < data.length; offset += chunkSize) {
+        demuxer.push(data.subarray(offset, offset + chunkSize))
+      }
+      const rebuilt = Float32Array.from(blocks.flatMap((b) => Array.from(b.samples)))
+      expect(rebuilt).toEqual(sine)
+    }
   })
 })
