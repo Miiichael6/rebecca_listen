@@ -54,6 +54,12 @@ export const DEFAULT_FOLDER_NAME = 'Rebecca Listen Recordings'
  */
 export const DEFAULT_NAMING_TEMPLATE = '[YYYY-MM-DD][hh-mm-ss]'
 
+/**
+ * Empty file created and deleted to check the recordings folder is writable
+ * before a recording starts (task 12).
+ */
+export const WRITE_PROBE_NAME = '.rebecca-listen-write-test'
+
 /** Suffix added when the target name is taken: " (1)", " (2)"... */
 export const NAME_COLLISION_SUFFIX = (n: number): string => ` (${n})`
 

@@ -4,10 +4,10 @@
  * that never overwrites a file or a `.part` still being written.
  */
 
-import { existsSync, mkdirSync } from 'fs'
+import { closeSync, existsSync, mkdirSync, openSync, rmSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
-import { DEFAULT_FOLDER_NAME, NAME_COLLISION_SUFFIX } from '@shared/defaults'
+import { DEFAULT_FOLDER_NAME, NAME_COLLISION_SUFFIX, WRITE_PROBE_NAME } from '@shared/defaults'
 import { buildBaseName } from '@shared/naming'
 import type { AudioFormat } from '@shared/types'
 
@@ -30,17 +30,33 @@ export function freePath(
   return path
 }
 
-/** Creates the folder if needed; throws with a readable message if it cannot. */
+/**
+ * Creates the folder if needed and checks a file can be created in it, so a
+ * recording never starts towards a folder it cannot write (`access(W_OK)`
+ * only sees the read-only flag on Windows, not ACLs or Controlled Folder Access).
+ */
+function ensureWritable(folder: string): void {
+  try {
+    mkdirSync(folder, { recursive: true })
+  } catch (error) {
+    throw new Error(`Cannot create the recordings folder ${folder}: ${(error as Error).message}`)
+  }
+  const probe = join(folder, WRITE_PROBE_NAME)
+  try {
+    closeSync(openSync(probe, 'w'))
+    rmSync(probe)
+  } catch (error) {
+    throw new Error(`Cannot write in the recordings folder ${folder}: ${(error as Error).message}`)
+  }
+}
+
+/** Throws with a readable message if the folder cannot be created or written. */
 export function resolveOutputPath(
   configuredFolder: string,
   now: Date,
   format: AudioFormat
 ): string {
   const folder = recordingsFolder(configuredFolder)
-  try {
-    mkdirSync(folder, { recursive: true })
-  } catch (error) {
-    throw new Error(`Cannot create the recordings folder ${folder}: ${(error as Error).message}`)
-  }
+  ensureWritable(folder)
   return freePath(folder, buildBaseName(now), format)
 }
