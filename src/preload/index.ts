@@ -1,24 +1,16 @@
 import { contextBridge } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
-import { APP_NAME } from '@shared/appInfo'
+import { api } from './api'
 
-// Custom APIs for renderer. Typed IPC channels arrive in task 02.
-const api = {
-  appName: APP_NAME
-}
-
+// The renderer reaches main only through `window.api` (spec §1.3): the default
+// `electronAPI` bridge of @electron-toolkit is not exposed, because it would
+// open `ipcRenderer` to any channel.
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } catch (error) {
     console.error(error)
   }
 } else {
-  // @ts-ignore (define in dts)
-  window.electron = electronAPI
-  // @ts-ignore (define in dts)
+  // @ts-ignore (defined in index.d.ts)
   window.api = api
 }
-
-export type RebeccaApi = typeof api

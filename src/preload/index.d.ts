@@ -1,9 +1,7 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
-import type { RebeccaApi } from './index'
+import type { RebeccaApi } from '@shared/ipc'
 
 declare global {
   interface Window {
-    electron: ElectronAPI
     api: RebeccaApi
   }
 }

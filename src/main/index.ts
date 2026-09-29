@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { APP_ID, APP_NAME, MAIN_WINDOW_SIZE } from '@shared/appInfo'
+import { registerIpc } from './ipc'
 import icon from '../../resources/icon.png?asset'
 
 function createWindow(): void {
@@ -40,6 +41,8 @@ function createWindow(): void {
 app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId(APP_ID)
+
+  registerIpc()
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

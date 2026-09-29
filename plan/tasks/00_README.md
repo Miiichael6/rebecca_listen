@@ -61,7 +61,7 @@ Además se recortó dentro de las tareas del núcleo:
 | # | Tarea | Fase | Depende de | Estado |
 |---|---|---|---|---|
 | 01 | [Estructura base y herramientas](done/01_estructura_y_herramientas.md) | 1 Base | — | ✅ Terminada |
-| 02 | [Canales IPC tipados, defaults y preload](pending/02_ipc_tipado_y_defaults.md) | 1 Base | 01 | ⬜ Pendiente |
+| 02 | [Canales IPC tipados, defaults y preload](done/02_ipc_tipado_y_defaults.md) | 1 Base | 01 | ✅ Terminada |
 | 03 | [Settings persistentes y logging](pending/03_settings_y_log.md) | 1 Base | 02 | ⬜ Pendiente |
 | 04 | [Layout estático de la ventana principal](pending/04_layout_principal_estatico.md) | 1 Base | 01, 02 | ⬜ Pendiente |
 | 05 | [Sidecar Rust: enumeración de dispositivos activos](pending/05_sidecar_rust_enumeracion.md) | 2 Dispositivos | 02 | ⛔ Bloqueada (D1) |
