@@ -141,6 +141,9 @@ export const mediaUrl = (id: string): string => `${MEDIA_SCHEME}://recording/${i
 /** File size is read with `fs.stat` at this interval while recording (§3.3). */
 export const FILE_PROGRESS_MS = 500
 
+/** Last bytes of ffmpeg's stderr kept for the log when an encoding fails. */
+export const FFMPEG_STDERR_TAIL_BYTES = 4096
+
 /** VU meter thresholds in dBFS: green below the first, yellow below the second. */
 export const VU_GREEN_MAX_DB = -12
 export const VU_YELLOW_MAX_DB = -3
