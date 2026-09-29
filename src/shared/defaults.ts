@@ -100,6 +100,12 @@ export const HOTKEY_COMMANDS: readonly HotkeyCommand[] = [
 /** Meter and waveform frames pushed to the renderer, per second. */
 export const METER_FPS = 30
 
+/** Quietest level main reports; silence (−Infinity dBFS) is sent as this. */
+export const METER_FLOOR_DB = -90
+
+/** Waveform columns in each `wave:frame`: 30 fps × 2 = 60 columns per second. */
+export const WAVE_COLUMNS_PER_FRAME = 2
+
 /** Device list polling interval; replaces the COM hot-plug notifications. */
 export const DEVICE_POLL_MS = 2000
 

@@ -4,6 +4,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { app, BrowserWindow } from 'electron'
 import { APP_ID } from '@shared/appInfo'
 import { watchDevicesWhileVisible } from './audio/deviceWatch'
+import { disposeMonitor, monitorWhileVisible } from './audio/monitor'
 import { isRecording, stop } from './audio/session'
 import { audioEngine } from './audio/engine/SidecarAudioEngine'
 import { handleMediaProtocol, registerMediaScheme } from './files/mediaProtocol'
@@ -15,6 +16,13 @@ import { createMainWindow } from './window'
 // Before anything else, so an early failure is already in the log file.
 initLog()
 registerMediaScheme()
+
+/** Device polling and level monitoring run only while the window can be seen. */
+function openMainWindow(): void {
+  const window = createMainWindow()
+  watchDevicesWhileVisible(window)
+  monitorWhileVisible(window)
+}
 
 app.whenReady().then(() => {
   electronApp.setAppUserModelId(APP_ID)
@@ -30,10 +38,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  watchDevicesWhileVisible(createMainWindow())
+  openMainWindow()
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) watchDevicesWhileVisible(createMainWindow())
+    if (BrowserWindow.getAllWindows().length === 0) openMainWindow()
   })
 })
 
@@ -47,7 +55,10 @@ app.on('before-quit', (event) => {
   void stop().finally(() => app.quit())
 })
 
-app.on('will-quit', () => audioEngine.dispose())
+app.on('will-quit', () => {
+  disposeMonitor()
+  audioEngine.dispose()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {

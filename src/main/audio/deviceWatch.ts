@@ -5,17 +5,9 @@
  */
 
 import type { BrowserWindow } from 'electron'
+import { onVisibilityChange } from '../windowVisibility'
 import { audioEngine } from './engine/SidecarAudioEngine'
 
 export function watchDevicesWhileVisible(window: BrowserWindow): void {
-  const sync = (): void =>
-    audioEngine.setWatchingDevices(
-      !window.isDestroyed() && window.isVisible() && !window.isMinimized()
-    )
-  window.on('show', sync)
-  window.on('hide', sync)
-  window.on('minimize', sync)
-  window.on('restore', sync)
-  window.on('closed', () => audioEngine.setWatchingDevices(false))
-  sync()
+  onVisibilityChange(window, (visible) => audioEngine.setWatchingDevices(visible))
 }

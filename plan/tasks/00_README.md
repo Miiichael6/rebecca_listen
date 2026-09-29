@@ -68,7 +68,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 06 | [Sondeo de dispositivos y motor de audio en main](done/06_hotplug_y_motor_en_main.md) | 2 Dispositivos | 05 | ✅ Terminada (hot-plug físico se prueba en 07) |
 | 07 | [Desplegable Source completo](done/07_desplegable_source.md) | 2 Dispositivos | 04, 06 | ✅ Terminada (falta probar hot-plug con hardware real) |
 | 08 | [Stream PCM del sidecar a main](done/08_stream_pcm_sidecar.md) | 3 Captura | 06 | ✅ Terminada (`device_lost` falta probar con hardware real) |
-| 09 | [DSP base: gain, meter, waveform y monitoreo](pending/09_dsp_gain_meter_waveform.md) | 3 Captura | 08 | ⬜ Pendiente |
+| 09 | [DSP base: gain, meter, waveform y monitoreo](done/09_dsp_gain_meter_waveform.md) | 3 Captura | 08 | ✅ Terminada |
 | 10 | [UI de Level, VU meter y waveform en vivo](pending/10_ui_level_vu_waveform.md) | 3 Captura | 04, 09 | ⬜ Pendiente |
 | 11 | [Encoder ffmpeg (MP3 y WAV)](pending/11_encoder_ffmpeg.md)* | 4 Grabación | 02 | ⬜ Pendiente |
 | 12 | [Nombres automáticos y carpeta de destino](pending/12_nombres_automaticos.md)* | 4 Grabación | 03 | ⬜ Pendiente |

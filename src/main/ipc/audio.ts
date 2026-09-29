@@ -1,4 +1,4 @@
-/** Devices, source, recording session, the list of recordings and opening them. */
+/** Devices, source, level, monitoring, recording session, the list of recordings and opening them. */
 
 import { mkdirSync } from 'fs'
 import { shell } from 'electron'
@@ -7,6 +7,7 @@ import { history } from '../history'
 import { logger } from '../log'
 import { settings } from '../settings'
 import { audioEngine } from '../audio/engine/SidecarAudioEngine'
+import { initMonitor, refreshMonitor, setMonitorLevel } from '../audio/monitor'
 import { initSession, record, snapshot, stop } from '../audio/session'
 import { broadcast, handle } from './typed'
 
@@ -25,10 +26,25 @@ export function registerAudioIpc(): void {
     notice: (notice) => broadcast('notice', notice)
   })
 
+  initMonitor({
+    meter: (frame) => broadcast('meter:frame', frame),
+    wave: (frame) => broadcast('wave:frame', frame)
+  })
+
   handle('devices:list', () => audioEngine.listDevices())
-  audioEngine.onDevicesChanged((devices) => broadcast('devices:changed', devices))
+  audioEngine.onDevicesChanged((devices) => {
+    broadcast('devices:changed', devices)
+    refreshMonitor()
+  })
   handle('source:get', () => settings.getSource())
-  handle('source:set', (source) => settings.setSource(source))
+  handle('source:set', (source) => {
+    settings.setSource(source)
+    refreshMonitor()
+  })
+  handle('level:set', (percent) => {
+    settings.setLevel(percent)
+    setMonitorLevel(settings.getLevel())
+  })
 
   handle('session:record', () => record())
   handle('session:stop', () => stop())
