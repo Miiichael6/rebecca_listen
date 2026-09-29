@@ -1,41 +1,24 @@
 /**
- * Talks to `rl-capture.exe` (see `native/PROTOCOL.md`): JSON commands on
- * stdin, JSON events on stderr, PCM blocks on stdout.
- *
- * The process is started on first use and again on the next request if it
- * dies. Automatic restart and device polling are task 06.
+ * `AudioEngine` over `rl-capture.exe` (see `native/PROTOCOL.md`): matches the
+ * sidecar's events to the requests that wait for them, routes PCM blocks to
+ * their streams and polls the device list for changes.
  */
 
-import { spawn, type ChildProcessWithoutNullStreams } from 'child_process'
 import { app } from 'electron'
 import { join } from 'path'
-import { SIDECAR_TIMEOUT_MS } from '@shared/defaults'
+import { DEVICE_POLL_MS, SIDECAR_TIMEOUT_MS } from '@shared/defaults'
 import type { AudioDevice } from '@shared/types'
 import { logger } from '../../log'
-import { FrameDemuxer } from './frameDemuxer'
-import { LineReader } from './lineReader'
+import type { AudioEngine, AudioStream } from './AudioEngine'
+import { describeDiff } from './diffDevices'
+import { DevicePoller } from './devicePoller'
+import type { SidecarCommand, SidecarEvent } from './sidecarMessages'
+import { SidecarProcess } from './sidecarProcess'
 
 const BINARY = 'rl-capture.exe'
 
-type StreamErrorReason = 'open_failed' | 'device_lost' | 'stream_failed'
-
-type SidecarEvent =
-  | { type: 'devices'; devices: AudioDevice[] }
-  | { type: 'warning'; message: string }
-  | { type: 'error'; code: string; message: string }
-  | { type: 'opened'; streamId: number; sampleRate: number; channels: number }
-  | { type: 'stopped'; streamId: number }
-  | { type: 'stream_error'; streamId: number; reason: StreamErrorReason; message: string }
-
-export interface AudioStream {
-  readonly sampleRate: number
-  readonly channels: number
-  /** Interleaved f32 samples, as they arrive. */
-  onData(listener: (samples: Float32Array) => void): void
-  /** The stream ended on its own (device lost, sidecar gone...). */
-  onError(listener: (reason: string) => void): void
-  stop(): Promise<void>
-}
+/** Stream ids travel as one byte in the PCM header. */
+const MAX_STREAM_ID = 255
 
 interface StreamHandlers {
   data?: (samples: Float32Array) => void
@@ -54,24 +37,58 @@ function binaryPath(): string {
   return join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), 'resources', 'bin', BINARY)
 }
 
-export class SidecarAudioEngine {
-  private child: ChildProcessWithoutNullStreams | null = null
+export class SidecarAudioEngine implements AudioEngine {
   private waiters: Waiter[] = []
   private streams = new Map<number, StreamHandlers>()
   private nextStreamId = 1
+  /** `list` requests waiting for their answer. */
+  private listsPending = 0
+  /**
+   * Warnings of the enumeration already logged: the same endpoint is skipped
+   * again on every poll and would fill the log.
+   */
+  private readonly listWarningsSeen = new Set<string>()
+
+  private readonly process = new SidecarProcess(binaryPath, {
+    event: (event) => this.handleEvent(event),
+    pcm: (block) => this.streams.get(block.streamId)?.data?.(block.samples),
+    ended: (reason) => this.dropPending(reason)
+  })
+
+  private readonly poller = new DevicePoller(
+    () => this.listDevices(),
+    DEVICE_POLL_MS,
+    (error) => logger.warn(`device polling failed: ${error.message}`)
+  )
+
+  constructor() {
+    this.poller.onChange((_, diff) => logger.info(`devices changed: ${describeDiff(diff)}`))
+  }
 
   async listDevices(): Promise<AudioDevice[]> {
+    this.listsPending += 1
     const event = await this.request(
       { cmd: 'list' },
       (e) => e.type === 'devices' || e.type === 'error'
-    )
+    ).finally(() => {
+      this.listsPending -= 1
+    })
     if (event.type !== 'devices') throw new Error(`device list failed: ${JSON.stringify(event)}`)
     return event.devices
   }
 
+  onDevicesChanged(listener: (devices: AudioDevice[]) => void): () => void {
+    return this.poller.onChange((devices) => listener(devices))
+  }
+
+  setWatchingDevices(watching: boolean): void {
+    if (watching) this.poller.start()
+    else this.poller.stop()
+  }
+
   async openStream(device: AudioDevice): Promise<AudioStream> {
     const streamId = this.nextStreamId
-    this.nextStreamId = (this.nextStreamId % 255) + 1
+    this.nextStreamId = (this.nextStreamId % MAX_STREAM_ID) + 1
     const handlers: StreamHandlers = {}
     this.streams.set(streamId, handlers)
 
@@ -106,8 +123,12 @@ export class SidecarAudioEngine {
     }
   }
 
-  private request(command: object, accept: Waiter['accept']): Promise<SidecarEvent> {
-    const child = this.ensureProcess()
+  dispose(): void {
+    this.poller.stop()
+    this.process.dispose()
+  }
+
+  private request(command: SidecarCommand, accept: Waiter['accept']): Promise<SidecarEvent> {
     return new Promise((resolve, reject) => {
       const waiter: Waiter = {
         accept,
@@ -125,51 +146,32 @@ export class SidecarAudioEngine {
         reject(new Error(`capture sidecar did not answer ${JSON.stringify(command)}`))
       }, SIDECAR_TIMEOUT_MS)
       this.waiters.push(waiter)
-      child.stdin.write(`${JSON.stringify(command)}\n`)
+      try {
+        this.process.send(command)
+      } catch (error) {
+        this.waiters = this.waiters.filter((w) => w !== waiter)
+        waiter.reject(error as Error)
+      }
     })
   }
 
-  private ensureProcess(): ChildProcessWithoutNullStreams {
-    if (this.child) return this.child
-    const path = binaryPath()
-    const child = spawn(path, [], { windowsHide: true })
-    logger.info(`capture sidecar started: ${path}`)
-
-    const demuxer = new FrameDemuxer((block) =>
-      this.streams.get(block.streamId)?.data?.(block.samples)
-    )
-    child.stdout.on('data', (chunk: Buffer) => demuxer.push(chunk))
-
-    const lines = new LineReader((line) => this.handleLine(line))
-    child.stderr.setEncoding('utf8')
-    child.stderr.on('data', (chunk: string) => lines.push(chunk))
-
-    const gone = (why: string): void => {
-      if (this.child !== child) return
-      this.child = null
-      logger.warn(`capture sidecar ended: ${why}`)
-      for (const waiter of this.waiters) waiter.reject(new Error(`capture sidecar ended: ${why}`))
-      this.waiters = []
-      for (const handlers of this.streams.values()) handlers.error?.('sidecar_ended')
-      this.streams.clear()
-    }
-    child.on('error', (error) => gone(error.message))
-    child.on('exit', (code) => gone(`exit code ${code}`))
-    child.stdin.on('error', (error) => gone(error.message))
-
-    this.child = child
-    return child
+  /** The process died: nothing it was doing will ever answer. */
+  private dropPending(reason: string): void {
+    for (const waiter of this.waiters) waiter.reject(new Error(`capture sidecar ended: ${reason}`))
+    this.waiters = []
+    for (const handlers of this.streams.values()) handlers.error?.('sidecar_ended')
+    this.streams.clear()
   }
 
-  private handleLine(line: string): void {
-    let event: SidecarEvent
-    try {
-      event = JSON.parse(line) as SidecarEvent
-    } catch {
-      logger.warn(`capture sidecar sent an invalid line: ${line}`)
-      return
+  private logWarning(message: string): void {
+    if (this.listsPending > 0) {
+      if (this.listWarningsSeen.has(message)) return
+      this.listWarningsSeen.add(message)
     }
+    logger.warn(`capture sidecar: ${message}`)
+  }
 
+  private handleEvent(event: SidecarEvent): void {
     const waiter = this.waiters.find((w) => w.accept(event))
     if (waiter) {
       this.waiters = this.waiters.filter((w) => w !== waiter)
@@ -179,7 +181,7 @@ export class SidecarAudioEngine {
 
     switch (event.type) {
       case 'warning':
-        logger.warn(`capture sidecar: ${event.message}`)
+        this.logWarning(event.message)
         break
       case 'stream_error':
         logger.warn(`stream ${event.streamId} failed (${event.reason}): ${event.message}`)
@@ -193,12 +195,6 @@ export class SidecarAudioEngine {
         break
     }
   }
-
-  /** Ends the process; stdin closing makes the sidecar exit on its own. */
-  dispose(): void {
-    this.child?.stdin.end()
-    this.child = null
-  }
 }
 
-export const audioEngine = new SidecarAudioEngine()
+export const audioEngine: AudioEngine = new SidecarAudioEngine()

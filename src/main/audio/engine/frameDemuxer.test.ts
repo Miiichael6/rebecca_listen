@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { FrameDemuxer, HEADER_BYTES, type PcmBlock } from './frameDemuxer'
-import { LineReader } from './lineReader'
 
 function block(streamId: number, channels: number, samples: number[]): Buffer {
   const frames = samples.length / channels
@@ -45,15 +44,5 @@ describe('FrameDemuxer', () => {
     const { blocks, demuxer } = collect()
     demuxer.push(Buffer.concat([block(1, 2, []), block(1, 2, [0.5, 0.5])]))
     expect(blocks.map((b) => b.samples.length)).toEqual([0, 2])
-  })
-})
-
-describe('LineReader', () => {
-  it('joins lines split across chunks and skips blank ones', () => {
-    const lines: string[] = []
-    const reader = new LineReader((line) => lines.push(line))
-    reader.push('{"a":1}\n{"b"')
-    reader.push(':2}\r\n\n{"c":3}\n{"d"')
-    expect(lines).toEqual(['{"a":1}', '{"b":2}', '{"c":3}'])
   })
 })

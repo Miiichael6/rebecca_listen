@@ -17,6 +17,7 @@ import { Timer } from '../../components/Timer'
 import { TransportBar } from '../../components/TransportBar'
 import { VuMeter } from '../../components/VuMeter'
 import { Waveform } from '../../components/Waveform'
+import { loadDevices, useDevicesStore } from '../../store/devices'
 import { usePlayerStore } from '../../store/player'
 import { loadRecorder, useRecorderStore } from '../../store/recorder'
 import styles from './MainWindow.module.css'
@@ -28,13 +29,15 @@ const SILENT_DB: number[] = []
 const RECORDING_ROW = 'recording'
 
 export function MainWindow(): React.JSX.Element {
-  const { devices, source, session, items, selectedId, notice } = useRecorderStore()
-  const { refreshDevices, setSource, select, dismissNotice } = useRecorderStore()
+  const { source, session, items, selectedId, notice } = useRecorderStore()
+  const { setSource, select, dismissNotice } = useRecorderStore()
+  const { devices, refresh: refreshDevices } = useDevicesStore()
   const { playingId, paused, positionMs, play, pause, stop } = usePlayerStore()
   const recording = session.state !== 'idle'
 
   useEffect(() => {
     void loadRecorder()
+    void loadDevices()
   }, [])
 
   // The file being written sits on top with `--:--` until it is saved.

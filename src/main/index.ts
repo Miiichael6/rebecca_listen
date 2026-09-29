@@ -3,6 +3,7 @@
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 import { app, BrowserWindow } from 'electron'
 import { APP_ID } from '@shared/appInfo'
+import { watchDevicesWhileVisible } from './audio/deviceWatch'
 import { isRecording, stop } from './audio/session'
 import { audioEngine } from './audio/engine/SidecarAudioEngine'
 import { handleMediaProtocol, registerMediaScheme } from './files/mediaProtocol'
@@ -29,10 +30,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  createMainWindow()
+  watchDevicesWhileVisible(createMainWindow())
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+    if (BrowserWindow.getAllWindows().length === 0) watchDevicesWhileVisible(createMainWindow())
   })
 })
 

@@ -1,46 +1,29 @@
 /**
- * Everything the main window shows about recording: devices, the selected
- * source, the session and the list. Main owns all of it; this is a copy kept
- * in sync by the push events.
+ * Everything the main window shows about recording: the selected source, the
+ * session and the list (the devices are in `devices.ts`). Main owns all of it;
+ * this is a copy kept in sync by the push events.
  */
 
-import type {
-  AudioDevice,
-  HistoryItem,
-  Notice,
-  SessionSnapshot,
-  SourceSelection
-} from '@shared/types'
+import type { HistoryItem, Notice, SessionSnapshot, SourceSelection } from '@shared/types'
 import { create } from 'zustand'
 
 interface RecorderStore {
-  devices: AudioDevice[]
   source: SourceSelection | null
   session: SessionSnapshot
   items: HistoryItem[]
   selectedId: string | null
   notice: Notice | null
-  refreshDevices: () => Promise<void>
   setSource: (source: SourceSelection) => Promise<void>
   select: (id: string) => void
   dismissNotice: () => void
 }
 
 export const useRecorderStore = create<RecorderStore>((set) => ({
-  devices: [],
   source: null,
   session: { state: 'idle', elapsedMs: 0, file: null },
   items: [],
   selectedId: null,
   notice: null,
-
-  refreshDevices: async () => {
-    try {
-      set({ devices: await window.api.invoke('devices:list') })
-    } catch (error) {
-      set({ notice: { level: 'error', message: `Could not list devices: ${String(error)}` } })
-    }
-  },
 
   setSource: async (source) => {
     await window.api.invoke('source:set', source)
@@ -70,5 +53,4 @@ export async function loadRecorder(): Promise<void> {
     window.api.invoke('history:list')
   ])
   useRecorderStore.setState({ source, items })
-  await useRecorderStore.getState().refreshDevices()
 }

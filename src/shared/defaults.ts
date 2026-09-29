@@ -108,6 +108,10 @@ export const SESSION_TICK_MS = 100
 /** How long main waits for an answer of the capture sidecar. */
 export const SIDECAR_TIMEOUT_MS = 5000
 
+/** A crashed sidecar is restarted at most this many times per window. */
+export const SIDECAR_MAX_RESTARTS = 3
+export const SIDECAR_RESTART_WINDOW_MS = 60_000
+
 /**
  * Scheme the renderer plays recordings from: `rl-media://recording/<id>`.
  * Main serves only files of the history (see `src/main/files/mediaProtocol.ts`).

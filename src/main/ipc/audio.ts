@@ -26,6 +26,7 @@ export function registerAudioIpc(): void {
   })
 
   handle('devices:list', () => audioEngine.listDevices())
+  audioEngine.onDevicesChanged((devices) => broadcast('devices:changed', devices))
   handle('source:get', () => settings.getSource())
   handle('source:set', (source) => settings.setSource(source))
 
