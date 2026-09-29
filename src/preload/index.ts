@@ -1,12 +1,12 @@
 import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
+import { APP_NAME } from '@shared/appInfo'
 
-// Custom APIs for renderer
-const api = {}
+// Custom APIs for renderer. Typed IPC channels arrive in task 02.
+const api = {
+  appName: APP_NAME
+}
 
-// Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)
@@ -20,3 +20,5 @@ if (process.contextIsolated) {
   // @ts-ignore (define in dts)
   window.api = api
 }
+
+export type RebeccaApi = typeof api

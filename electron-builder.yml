@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: rebecca_listen
+appId: com.michael.rebeccalisten
+productName: Rebecca Listen
 directories:
   buildResources: build
 files:

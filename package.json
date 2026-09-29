@@ -1,12 +1,14 @@
 {
   "name": "rebecca_listen",
+  "productName": "Rebecca Listen",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "Records system audio, the microphone, or both, with automatic file names and history.",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Michael",
   "scripts": {
     "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint": "eslint --cache .",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json --composite false",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
@@ -23,7 +25,11 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "electron-updater": "^6.3.9"
+    "electron-log": "^5.4.4",
+    "electron-store": "^11.0.2",
+    "electron-updater": "^6.3.9",
+    "lucide-react": "^1.48.0",
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
@@ -44,6 +50,7 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.6"
+    "vite": "^7.2.6",
+    "vitest": "^5.0.2"
   }
 }
