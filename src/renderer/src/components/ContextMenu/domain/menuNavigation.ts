@@ -2,7 +2,7 @@
  * Placement and keyboard movement of the context menu. Pure: no React, no DOM.
  */
 
-import type { ContextMenuItem } from './types'
+import type { MenuItem } from './types'
 
 /** Distance kept from the edges of the window. */
 export const MARGIN = 6
@@ -12,7 +12,7 @@ export const SUBMENU_OFFSET_Y = -4
 export const clamp = (value: number, min: number, max: number): number =>
   Math.max(min, Math.min(value, max))
 
-export function enabledIndexes(items: ContextMenuItem[]): number[] {
+export function enabledIndexes(items: Pick<MenuItem, 'disabled'>[]): number[] {
   return items.flatMap((item, index) => (item.disabled ? [] : [index]))
 }
 

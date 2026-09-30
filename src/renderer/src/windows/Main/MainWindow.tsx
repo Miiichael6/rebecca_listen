@@ -6,11 +6,10 @@
  * Everything is live: Level drives the gain in main (monitor and file), and
  * the VU meter and waveform draw its frames. Record, Pause and Stop drive the
  * session in main; with no recording in progress, ▶ ⏸ ■ play the selected
- * recording inside the app and the timer shows its position.
+ * recording inside the app and the timer shows its position. What each
+ * control does is in `application/useMainWindow`; this file lays them out.
  */
 
-import { useEffect } from 'react'
-import type { MeterFrame, WaveFrame } from '@shared/types'
 import { LevelSlider } from '../../components/LevelSlider'
 import { PlaybackBar } from '../../components/PlaybackBar'
 import { RecordingList } from '../../components/RecordingList/RecordingList'
@@ -22,39 +21,14 @@ import { Timer } from '../../components/Timer'
 import { TransportBar } from '../../components/TransportBar'
 import { VuMeter } from '../../components/VuMeter'
 import { Waveform } from '../../components/Waveform'
-import { loadDevices, useDevicesStore } from '../../store/devices'
-import { usePlayerStore } from '../../store/player'
-import { loadRecorder, useRecorderStore } from '../../store/recorder'
-import { runRecordingCommand } from '../../store/recordingCommands'
-import { loadSession, useSessionStore } from '../../store/session'
+import { useMainWindow } from './application/useMainWindow'
+import { onMeterFrame, onWaveFrame } from './infrastructure/mainApi'
 import styles from './MainWindow.module.css'
 
-const onMeterFrame = (listener: (frame: MeterFrame) => void): (() => void) =>
-  window.api.on('meter:frame', listener)
-const onWaveFrame = (listener: (frame: WaveFrame) => void): (() => void) =>
-  window.api.on('wave:frame', listener)
-
 export function MainWindow(): React.JSX.Element {
-  const { source, sourceListExpanded, level, items, selectedId, editingId, tagsId, notice } =
-    useRecorderStore()
-  const { setSource, setSourceListExpanded, setLevel, select, rename, endRename } =
-    useRecorderStore()
-  const { folder, importAudioFile, clearList, chooseFolder, closeTags, dismissNotice } =
-    useRecorderStore()
-  const { devices, refresh: refreshDevices } = useDevicesStore()
-  const { playingId, paused, positionMs, pause, stop } = usePlayerStore()
-  const { session, record, togglePause, stop: stopRecording } = useSessionStore()
-  const recording = session.state !== 'idle'
-
-  useEffect(() => {
-    loadSession()
-    void loadRecorder()
-    void loadDevices()
-  }, [])
-
-  const selected = items.find((item) => item.id === selectedId) ?? null
-  const playing = items.find((item) => item.id === playingId) ?? null
-  const tagged = items.find((item) => item.id === tagsId) ?? null
+  const main = useMainWindow()
+  const { recorder, devices, session, recording, playing, tagged, player } = main
+  const { source, items, notice } = recorder
 
   return (
     <div className={styles.window}>
@@ -63,7 +37,7 @@ export function MainWindow(): React.JSX.Element {
           type="button"
           className={`${styles.notice} ${styles[notice.level]}`}
           title="Dismiss"
-          onClick={dismissNotice}
+          onClick={recorder.dismissNotice}
         >
           {notice.message}
         </button>
@@ -72,11 +46,11 @@ export function MainWindow(): React.JSX.Element {
         <SourcePicker
           source={source}
           devices={devices}
-          expanded={sourceListExpanded}
+          expanded={recorder.sourceListExpanded}
           disabled={recording}
-          onOpen={() => void refreshDevices()}
-          onChange={(next) => void setSource(next)}
-          onExpandedChange={(expanded) => void setSourceListExpanded(expanded)}
+          onOpen={main.refreshDevices}
+          onChange={(next) => void recorder.setSource(next)}
+          onExpandedChange={(expanded) => void recorder.setSourceListExpanded(expanded)}
         />
         {source?.mode === 'mixed' && (
           <MicrophonePicker
@@ -84,52 +58,45 @@ export function MainWindow(): React.JSX.Element {
             devices={devices}
             disabled={recording}
             onChange={(voiceId) =>
-              void setSource(voiceId ? { mode: 'mixed', voiceId } : { mode: 'mixed' })
+              void recorder.setSource(voiceId ? { mode: 'mixed', voiceId } : { mode: 'mixed' })
             }
           />
         )}
-        <LevelSlider percent={level} onChange={setLevel} />
+        <LevelSlider percent={recorder.level} onChange={recorder.setLevel} />
         <VuMeter subscribe={onMeterFrame} />
       </section>
       <section className={`${styles.panel} ${styles.monitor}`}>
-        <Timer
-          elapsedMs={!recording && playingId ? positionMs : session.elapsedMs}
-          paused={recording ? session.state === 'paused' : paused}
-        />
+        <Timer elapsedMs={main.timerMs} paused={main.timerPaused} />
         <Waveform subscribe={onWaveFrame} frozen={session.state === 'paused'} />
         <StatusBar state={session.state} count={items.length} />
       </section>
-      <PlaybackBar positionMs={positionMs} durationMs={playing?.durationMs ?? 0} />
+      <PlaybackBar positionMs={player.positionMs} durationMs={playing?.durationMs ?? 0} />
       <RecordingList
         items={items}
-        selectedId={selectedId}
-        editingId={editingId}
+        selectedId={recorder.selectedId}
+        editingId={recorder.editingId}
         recordingFile={session.file}
-        onSelect={select}
-        onOpen={(item) => runRecordingCommand(item.id, 'play')}
+        onSelect={recorder.select}
+        onOpen={(item) => main.runRecordingCommand(item.id, 'play')}
         canPlay={!recording}
-        onCommand={runRecordingCommand}
-        onRename={(id, name) => void rename(id, name)}
-        onRenameEnd={endRename}
+        onCommand={main.runRecordingCommand}
+        onRename={(id, name) => void recorder.rename(id, name)}
+        onRenameEnd={recorder.endRename}
       />
       <TransportBar
         state={session.state}
-        onRecord={() => {
-          // Playing through the speakers would end up in a loopback recording.
-          stop()
-          void record()
-        }}
-        onStop={() => (recording ? void stopRecording() : stop())}
-        onPlay={() => selected && runRecordingCommand(selected.id, 'play')}
-        onPause={() => (recording ? void togglePause() : pause())}
+        onRecord={main.onRecord}
+        onStop={main.onStop}
+        onPlay={main.onPlay}
+        onPause={main.onPause}
         hasItems={items.length > 0}
-        folder={folder}
-        onOpenFolder={() => void window.api.invoke('shell:openRecordingsFolder')}
-        onChangeFolder={() => void chooseFolder()}
-        onOpenAudioFile={() => void importAudioFile()}
-        onClearList={() => void clearList()}
+        folder={recorder.folder}
+        onOpenFolder={main.openRecordingsFolder}
+        onChangeFolder={() => void recorder.chooseFolder()}
+        onOpenAudioFile={() => void recorder.importAudioFile()}
+        onClearList={() => void recorder.clearList()}
       />
-      {tagged && <TagEditor key={tagged.id} item={tagged} onClose={closeTags} />}
+      {tagged && <TagEditor key={tagged.id} item={tagged} onClose={recorder.closeTags} />}
     </div>
   )
 }

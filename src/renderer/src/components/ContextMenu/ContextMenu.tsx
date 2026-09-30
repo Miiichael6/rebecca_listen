@@ -4,15 +4,14 @@
  * and one level of submenus. It opens at a point and moves in when it would
  * leave the window; a submenu opens beside its item, on the side with room.
  *
- * Keyboard: arrows, `Home` and `End` move, `Enter` or `Space` choose, `→`
- * opens a submenu and `←` goes back from it, `Esc` closes the submenu first
- * and then the menu, `Tab` closes. A click outside, a scroll or leaving the
- * window close it.
+ * The behavior (keys, active item, submenu, closing) is in
+ * `application/useContextMenu`; this file only places and draws it.
  */
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { clamp, enabledIndexes, MARGIN, stepFrom } from './menuNavigation'
+import { useContextMenu } from './application/useContextMenu'
+import { clamp, MARGIN } from './domain/menuNavigation'
 import { MenuRow } from './MenuRow'
 import { Submenu } from './Submenu'
 import type { ContextMenuItem } from './types'
@@ -29,14 +28,6 @@ interface ContextMenuProps {
   onClose: () => void
 }
 
-/** The submenu shown and its active item; `active` is -1 while the keys still move the menu. */
-interface OpenSubmenu {
-  index: number
-  active: number
-  /** Row of the item that opened it, to place it beside. */
-  anchor: HTMLElement
-}
-
 export function ContextMenu({
   x,
   y,
@@ -46,12 +37,9 @@ export function ContextMenu({
   onClose
 }: ContextMenuProps): React.JSX.Element {
   const menu = useRef<HTMLDivElement>(null)
-  const rows = useRef<(HTMLDivElement | null)[]>([])
   const [position, setPosition] = useState({ left: x, top: y })
-  const enabled = enabledIndexes(items)
-  const [active, setActive] = useState(enabled[0] ?? -1)
-  const [submenu, setSubmenu] = useState<OpenSubmenu | null>(null)
-  const children = submenu ? (items[submenu.index]?.children ?? []) : []
+  const behavior = useContextMenu({ items, onChoose, onClose, menu })
+  const { submenu } = behavior
 
   // Measured before paint, so it never flashes outside the window.
   useLayoutEffect(() => {
@@ -64,90 +52,6 @@ export function ContextMenu({
     setPosition({ left, top })
   }, [x, y])
 
-  useEffect(() => {
-    menu.current?.focus()
-    const closeOutside = (event: MouseEvent): void => {
-      if (!menu.current?.contains(event.target as Node)) onClose()
-    }
-    const close = (): void => onClose()
-    window.addEventListener('mousedown', closeOutside, true)
-    window.addEventListener('blur', close)
-    window.addEventListener('resize', close)
-    window.addEventListener('wheel', close, true)
-    return () => {
-      window.removeEventListener('mousedown', closeOutside, true)
-      window.removeEventListener('blur', close)
-      window.removeEventListener('resize', close)
-      window.removeEventListener('wheel', close, true)
-    }
-  }, [onClose])
-
-  const finish = (item: ContextMenuItem | undefined): void => {
-    if (!item || item.disabled) return
-    onClose()
-    onChoose(item.key)
-  }
-
-  /** From the keyboard the first enabled item of the submenu is active at once. */
-  const openSubmenu = (index: number, fromKeyboard: boolean): void => {
-    const item = items[index]
-    const anchor = rows.current[index]
-    if (!item?.children || item.disabled || !anchor) return
-    setActive(index)
-    const active = fromKeyboard ? (enabledIndexes(item.children)[0] ?? -1) : -1
-    setSubmenu({ index, active, anchor })
-  }
-
-  const choose = (index: number): void => {
-    if (items[index]?.children) openSubmenu(index, true)
-    else finish(items[index])
-  }
-
-  const hover = (index: number): void => {
-    setActive(index)
-    if (items[index]?.children) openSubmenu(index, false)
-    else setSubmenu(null)
-  }
-
-  const menuKeys: Record<string, () => void> = {
-    ArrowDown: () => hover(stepFrom(enabled, active, 1)),
-    ArrowUp: () => hover(stepFrom(enabled, active, -1)),
-    Home: () => hover(enabled[0] ?? -1),
-    End: () => hover(enabled[enabled.length - 1] ?? -1),
-    ArrowRight: () => openSubmenu(active, true),
-    Enter: () => choose(active),
-    ' ': () => choose(active),
-    Escape: onClose,
-    Tab: onClose
-  }
-
-  const submenuKeys = (open: OpenSubmenu): Record<string, () => void> => {
-    const inside = enabledIndexes(children)
-    const moveTo = (index: number): void => setSubmenu({ ...open, active: index })
-    const back = (): void => setSubmenu(null)
-    return {
-      ArrowDown: () => moveTo(stepFrom(inside, open.active, 1)),
-      ArrowUp: () => moveTo(stepFrom(inside, open.active, -1)),
-      Home: () => moveTo(inside[0] ?? -1),
-      End: () => moveTo(inside[inside.length - 1] ?? -1),
-      Enter: () => finish(children[open.active]),
-      ' ': () => finish(children[open.active]),
-      ArrowLeft: back,
-      Escape: back,
-      Tab: onClose
-    }
-  }
-
-  const onKeyDown = (event: React.KeyboardEvent): void => {
-    event.stopPropagation()
-    const keys = submenu && submenu.active >= 0 ? submenuKeys(submenu) : menuKeys
-    const action = keys[event.key]
-    if (action) {
-      event.preventDefault()
-      action()
-    }
-  }
-
   return createPortal(
     <div
       ref={menu}
@@ -155,7 +59,7 @@ export function ContextMenu({
       style={position}
       role="menu"
       tabIndex={-1}
-      onKeyDown={onKeyDown}
+      onKeyDown={behavior.onKeyDown}
       onContextMenu={(event) => event.preventDefault()}
     >
       {title && (
@@ -167,21 +71,19 @@ export function ContextMenu({
         <MenuRow
           key={item.key}
           item={item}
-          active={index === active}
-          rowRef={(row) => {
-            rows.current[index] = row
-          }}
-          onHover={() => hover(index)}
-          onClick={() => choose(index)}
+          active={index === behavior.active}
+          rowRef={behavior.rowRef(index)}
+          onHover={() => behavior.hover(index)}
+          onClick={() => behavior.choose(index)}
         />
       ))}
       {submenu && (
         <Submenu
           anchor={submenu.anchor}
-          items={children}
+          items={behavior.children}
           active={submenu.active}
-          onHover={(index) => setSubmenu({ ...submenu, active: index })}
-          onChoose={(index) => finish(children[index])}
+          onHover={behavior.hoverInSubmenu}
+          onChoose={behavior.chooseInSubmenu}
         />
       )}
     </div>,

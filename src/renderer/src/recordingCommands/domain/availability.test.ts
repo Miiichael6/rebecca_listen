@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canMerge, canRun, parseFormatCommand } from './recordingCommandAvailability'
+import { canMerge, canRun, parseFormatCommand } from './availability'
 
 describe('canRun', () => {
   it('allows everything on a file that exists', () => {

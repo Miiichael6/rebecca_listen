@@ -10,7 +10,7 @@
 import { Check } from 'lucide-react'
 import type { AudioDevice } from '@shared/types'
 import styles from './SourcePicker.module.css'
-import { QUICK_MODES, TOGGLE_KEY, deviceKey, type DeviceGroup } from './sourceOptions'
+import { QUICK_MODES, TOGGLE_KEY, deviceKey, type DeviceGroup } from './domain/sourceOptions'
 
 const MIXED_HELP =
   'Records the default output (what the computer plays) mixed with a microphone (the default one, or the one picked below).'

@@ -5,7 +5,7 @@
 
 import { useEffect, useRef } from 'react'
 import { FileText } from 'lucide-react'
-import { baseName } from './listKeys'
+import { baseName } from './domain/listKeys'
 import styles from './RecordingList.module.css'
 
 interface NameEditorProps {

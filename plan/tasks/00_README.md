@@ -89,6 +89,8 @@ Además se recortó dentro de las tareas del núcleo:
 | 38 | [Elegir la carpeta de las grabaciones](done/38_elegir_carpeta_de_grabaciones.md) | 6 Lista | 12, 17 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 | 39 | [Barra de título con los colores de la app](done/39_barra_de_titulo_integrada.md) | 1 Base | 04 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 | 40 | ["Open file location" abre el Explorador](done/40_abrir_ubicacion_con_explorer.md) | 6 Lista | 37 | ✅ Terminada (prueba en vivo pendiente del usuario) |
+| 41 | [Micrófono del modo mixto](done/41_microfono_del_mix.md) | 6 Lista | 16, 07 | ✅ Terminada (prueba en vivo pendiente del usuario) |
+| 42 | [Arquitectura hexagonal en los componentes grandes](done/42_arquitectura_hexagonal_componentes.md) | 6 Lista | 17, 37 | ✅ Terminada |
 
 \* **No dependen del sidecar**: 11 y 12 se adelantan a su fase porque solo necesitan 02 y 03. Con D1 ya resuelta (2026-09-29) el orden natural vuelve a ser el numérico.
 

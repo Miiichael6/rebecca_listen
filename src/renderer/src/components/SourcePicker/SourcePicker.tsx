@@ -1,30 +1,15 @@
 /**
  * Source row (spec §4.1): grey label and a combo that opens `SourceMenu`.
- *
- * The combo keeps the focus while the list is open and drives it from the
- * keyboard: arrows, Home/End, Enter or Space to choose, Esc to close. The list
- * follows `devices` live, so plugging or unplugging hardware while it is open
- * neither closes it nor loses the active row.
+ * What the combo does (keys, open list, choosing) is in
+ * `application/useSourcePicker`; this file draws it.
  */
 
 import { AlertTriangle, ChevronDown, FileAudio } from 'lucide-react'
-import { useEffect, useId, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { AudioDevice, SourceSelection } from '@shared/types'
+import { useSourcePicker } from './application/useSourcePicker'
 import { SourceMenu } from './SourceMenu'
 import styles from './SourcePicker.module.css'
-import {
-  TOGGLE_KEY,
-  activeKeyOf,
-  comboLabel,
-  groupDevices,
-  keyOf,
-  navigableKeys,
-  selectionOf,
-  stepKey
-} from './sourceOptions'
-
-/** Space kept free between the bottom of the list and the window edge. */
-const MENU_MARGIN_PX = 8
 
 const MISSING_HELP = 'The saved device is not connected. Recording will use Computer Sounds.'
 
@@ -50,84 +35,18 @@ export function SourcePicker({
   onExpandedChange,
   onOpen
 }: SourcePickerProps): React.JSX.Element {
-  const [open, setOpen] = useState(false)
-  const [wantedKey, setWantedKey] = useState<string | null>(null)
-  const [maxHeight, setMaxHeight] = useState(0)
-  const wrapRef = useRef<HTMLDivElement>(null)
-  const baseId = useId()
-
-  const groups = groupDevices(devices)
-  const keys = navigableKeys(groups, expanded)
-  const selectedKey = source ? keyOf(source) : ''
-  const activeKey = activeKeyOf(keys, wantedKey, selectedKey)
-  const label = comboLabel(source, devices)
-  const isOpen = open && !disabled
-  const optionId = (key: string): string => `${baseId}-${key}`
-
-  // Clicking anywhere else, or leaving the window, closes the list.
-  useEffect(() => {
-    if (!isOpen) return
-    const closeOutside = (event: MouseEvent): void => {
-      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false)
-    }
-    const close = (): void => setOpen(false)
-    document.addEventListener('mousedown', closeOutside)
-    window.addEventListener('blur', close)
-    return () => {
-      document.removeEventListener('mousedown', closeOutside)
-      window.removeEventListener('blur', close)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    if (!isOpen) return
-    document.getElementById(`${baseId}-${activeKey}`)?.scrollIntoView({ block: 'nearest' })
-  }, [isOpen, activeKey, baseId])
-
-  function openMenu(): void {
-    const bottom = wrapRef.current?.getBoundingClientRect().bottom ?? 0
-    setMaxHeight(window.innerHeight - bottom - MENU_MARGIN_PX)
-    setWantedKey(null)
-    setOpen(true)
-    onOpen?.()
-  }
-
-  function choose(key: string): void {
-    if (key === TOGGLE_KEY) {
-      onExpandedChange(!expanded)
-      return
-    }
-    const next = selectionOf(key)
-    // Choosing the mix again keeps the microphone that was picked for it.
-    if (next?.mode === 'mixed' && source?.mode === 'mixed') onChange(source)
-    else if (next) onChange(next)
-    setOpen(false)
-  }
-
-  function onKeyDown(event: React.KeyboardEvent): void {
-    const moves: Record<string, number> = {
-      ArrowDown: 1,
-      ArrowUp: -1,
-      Home: -Infinity,
-      End: Infinity
-    }
-    if (!isOpen) {
-      if (['ArrowDown', 'ArrowUp', 'Enter', ' '].includes(event.key)) {
-        event.preventDefault()
-        openMenu()
-      }
-      return
-    }
-    if (event.key in moves) {
-      event.preventDefault()
-      setWantedKey(stepKey(keys, activeKey, moves[event.key]))
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      choose(activeKey)
-    } else if (event.key === 'Escape' || event.key === 'Tab') {
-      setOpen(false)
-    }
-  }
+  const wrap = useRef<HTMLDivElement>(null)
+  const picker = useSourcePicker({
+    wrap,
+    source,
+    devices,
+    expanded,
+    disabled,
+    onChange,
+    onExpandedChange,
+    onOpen
+  })
+  const { label, isOpen } = picker
 
   const comboClasses = [styles.combo]
   if (disabled) comboClasses.push(styles.disabled)
@@ -136,7 +55,7 @@ export function SourcePicker({
   return (
     <div className={styles.row}>
       <span className={styles.label}>Source</span>
-      <div className={styles.comboWrap} ref={wrapRef}>
+      <div className={styles.comboWrap} ref={wrap}>
         <button
           type="button"
           role="combobox"
@@ -145,11 +64,11 @@ export function SourcePicker({
           aria-label="Source"
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          aria-controls={isOpen ? `${baseId}-menu` : undefined}
-          aria-activedescendant={isOpen ? optionId(activeKey) : undefined}
+          aria-controls={isOpen ? picker.menuId : undefined}
+          aria-activedescendant={isOpen ? picker.optionId(picker.activeKey) : undefined}
           title={label.missing ? MISSING_HELP : undefined}
-          onClick={() => (isOpen ? setOpen(false) : openMenu())}
-          onKeyDown={onKeyDown}
+          onClick={picker.toggle}
+          onKeyDown={picker.onKeyDown}
         >
           {label.missing ? (
             <AlertTriangle className={styles.warning} size={16} aria-hidden />
@@ -161,15 +80,15 @@ export function SourcePicker({
         </button>
         {isOpen && (
           <SourceMenu
-            id={`${baseId}-menu`}
-            groups={groups}
+            id={picker.menuId}
+            groups={picker.groups}
             expanded={expanded}
-            selectedKey={selectedKey}
-            activeKey={activeKey}
-            maxHeight={maxHeight}
-            optionId={optionId}
-            onActivate={setWantedKey}
-            onChoose={choose}
+            selectedKey={picker.selectedKey}
+            activeKey={picker.activeKey}
+            maxHeight={picker.maxHeight}
+            optionId={picker.optionId}
+            onActivate={picker.setActive}
+            onChoose={picker.choose}
           />
         )}
       </div>

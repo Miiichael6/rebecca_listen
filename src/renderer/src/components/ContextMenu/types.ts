@@ -1,15 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
+import type { MenuItem } from './domain/types'
 
-export interface ContextMenuItem {
-  key: string
-  label: string
-  icon?: LucideIcon
-  /** Shown on the right; the keys themselves are handled by whoever opens the menu. */
-  shortcut?: string
-  danger?: boolean
-  disabled?: boolean
-  /** Draws a line above the item. */
-  separated?: boolean
-  /** Makes the item open a submenu instead of being chosen. */
-  children?: ContextMenuItem[]
-}
+/** A menu item as the view draws it: with a Lucide icon. */
+export type ContextMenuItem = MenuItem<LucideIcon>

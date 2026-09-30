@@ -6,29 +6,20 @@
  * Copy path, Merge all to one and Clear all stay available on it. The folder
  * button after each name opens its location in the Explorer.
  *
- * Double click plays the file and right click opens its context menu. The
- * keys act on the selected row like the items of that menu: `Enter` plays,
- * `F2` renames in place (`Enter` or leaving the field saves, `Esc` cancels),
- * `Ctrl+D` duplicates, `Supr` removes from the list, `Shift+Supr` deletes the
- * file, and the menu key or `Shift+F10` opens the menu.
+ * Double click plays the file and right click opens its context menu. Keys,
+ * menu and renaming are in `application/useRecordingList`; this file draws.
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useRef } from 'react'
 import type { HistoryItem, RecordingCommand, SessionSnapshot } from '@shared/types'
 import { UNKNOWN_DURATION, formatDuration } from '../../lib/duration'
 import { formatDate, formatSize } from '../../lib/fileInfo'
 import { ContextMenu } from '../ContextMenu/ContextMenu'
+import { useRecordingList } from './application/useRecordingList'
 import { FileName } from './FileName'
-import { baseName, commandOfKey, opensMenu } from './listKeys'
-import { menuItems } from './menuItems'
+import { withIcons } from './menuIcons'
 import { NameEditor } from './NameEditor'
 import styles from './RecordingList.module.css'
-
-interface MenuState {
-  id: string
-  x: number
-  y: number
-}
 
 interface RecordingListProps {
   items: HistoryItem[]
@@ -67,28 +58,17 @@ export function RecordingList({
   onRenameEnd
 }: RecordingListProps): React.JSX.Element {
   const body = useRef<HTMLDivElement>(null)
-  const [menu, setMenu] = useState<MenuState | null>(null)
-  const menuItem = menu && items.find((item) => item.id === menu.id)
-
-  const closeMenu = useCallback(() => {
-    setMenu(null)
-    body.current?.focus()
-  }, [])
-
-  /** From the keyboard the menu opens under the name of the selected row. */
-  const openMenuAtRow = (id: string): void => {
-    const row = body.current?.querySelector<HTMLElement>(`[data-id="${CSS.escape(id)}"]`)
-    const box = row?.getBoundingClientRect()
-    if (box) setMenu({ id, x: box.left + 24, y: box.bottom })
-  }
-
-  const endEdit = (item: HistoryItem, name: string | null): void => {
-    onRenameEnd?.()
-    body.current?.focus()
-    if (name !== null && name.trim() && name.trim() !== baseName(item.name)) {
-      onRename?.(item.id, name)
-    }
-  }
+  const list = useRecordingList({
+    body,
+    items,
+    selectedId,
+    canPlay,
+    onSelect,
+    onCommand,
+    onRename,
+    onRenameEnd
+  })
+  const { menu, menuItem } = list
 
   return (
     <div className={styles.table}>
@@ -98,24 +78,7 @@ export function RecordingList({
         <span>Date Recorded</span>
         <span>Size</span>
       </div>
-      <div
-        ref={body}
-        className={styles.body}
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (!selectedId) return
-          if (opensMenu(event)) {
-            event.preventDefault()
-            openMenuAtRow(selectedId)
-            return
-          }
-          const command = commandOfKey(event)
-          if (command && onCommand) {
-            event.preventDefault()
-            onCommand(selectedId, command)
-          }
-        }}
-      >
+      <div ref={body} className={styles.body} tabIndex={0} onKeyDown={list.onKeyDown}>
         {recordingFile && (
           <div className={`${styles.row} ${styles.active}`} title={recordingFile.path}>
             <FileName name={recordingFile.name} />
@@ -132,15 +95,10 @@ export function RecordingList({
             title={item.exists ? item.path : `File not found: ${item.path}`}
             onClick={() => onSelect?.(item.id)}
             onDoubleClick={() => onOpen?.(item)}
-            onContextMenu={(event) => {
-              event.preventDefault()
-              onSelect?.(item.id)
-              body.current?.focus()
-              setMenu({ id: item.id, x: event.clientX, y: event.clientY })
-            }}
+            onContextMenu={(event) => list.onRowContextMenu(event, item)}
           >
             {item.id === editingId ? (
-              <NameEditor name={item.name} onDone={(name) => endEdit(item, name)} />
+              <NameEditor name={item.name} onDone={(name) => list.endEdit(item, name)} />
             ) : (
               <FileName
                 name={item.name}
@@ -159,9 +117,9 @@ export function RecordingList({
           x={menu.x}
           y={menu.y}
           title={menuItem.name}
-          items={menuItems(menuItem, items, canPlay)}
+          items={withIcons(list.menuEntries)}
           onChoose={(key) => onCommand?.(menuItem.id, key as RecordingCommand)}
-          onClose={closeMenu}
+          onClose={list.closeMenu}
         />
       )}
     </div>

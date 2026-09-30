@@ -1,7 +1,7 @@
 /** Submenu beside the item that opened it, on the side with room. */
 
 import { useLayoutEffect, useRef, useState } from 'react'
-import { clamp, MARGIN, SUBMENU_OFFSET_Y } from './menuNavigation'
+import { clamp, MARGIN, SUBMENU_OFFSET_Y } from './domain/menuNavigation'
 import { MenuRow } from './MenuRow'
 import type { ContextMenuItem } from './types'
 import styles from './ContextMenu.module.css'
