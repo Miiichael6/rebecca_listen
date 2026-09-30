@@ -7,7 +7,7 @@ import { buildFileName } from '@shared/naming'
 // `naming.ts` imports `app` only for the default folder, which is not tested here.
 vi.mock('electron', () => ({ app: { getPath: () => '' } }))
 
-const { freePath, resolveOutputPath } = await import('./naming')
+const { checkWritableFolder, freePath, resolveOutputPath } = await import('./naming')
 
 describe('buildFileName', () => {
   it('pads every field with zeros', () => {
@@ -63,5 +63,22 @@ describe('resolveOutputPath', () => {
     expect(() => resolveOutputPath(join(blocker, 'rec'), now, 'mp3')).toThrow(
       /Cannot create the recordings folder/
     )
+  })
+})
+
+describe('checkWritableFolder', () => {
+  const root = mkdtempSync(join(tmpdir(), 'rl-folder-'))
+  afterAll(() => rmSync(root, { recursive: true, force: true }))
+
+  it('accepts a folder it can write in, leaving nothing behind', () => {
+    const folder = join(root, 'chosen')
+    expect(() => checkWritableFolder(folder)).not.toThrow()
+    expect(readdirSync(folder)).toEqual([])
+  })
+
+  it('refuses a path that cannot be a folder', () => {
+    const blocker = join(root, 'file')
+    writeFileSync(blocker, '')
+    expect(() => checkWritableFolder(blocker)).toThrow(/recordings folder/)
   })
 })

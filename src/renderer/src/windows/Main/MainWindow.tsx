@@ -13,10 +13,10 @@ import { useEffect } from 'react'
 import type { MeterFrame, WaveFrame } from '@shared/types'
 import { LevelSlider } from '../../components/LevelSlider'
 import { PlaybackBar } from '../../components/PlaybackBar'
-import { RecordingList } from '../../components/RecordingList'
+import { RecordingList } from '../../components/RecordingList/RecordingList'
 import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
 import { StatusBar } from '../../components/StatusBar'
-import { TagEditor } from '../../components/TagEditor'
+import { TagEditor } from '../../components/TagEditor/TagEditor'
 import { Timer } from '../../components/Timer'
 import { TransportBar } from '../../components/TransportBar'
 import { VuMeter } from '../../components/VuMeter'
@@ -38,7 +38,8 @@ export function MainWindow(): React.JSX.Element {
     useRecorderStore()
   const { setSource, setSourceListExpanded, setLevel, select, rename, endRename } =
     useRecorderStore()
-  const { importAudioFile, clearList, closeTags, dismissNotice } = useRecorderStore()
+  const { folder, importAudioFile, clearList, chooseFolder, closeTags, dismissNotice } =
+    useRecorderStore()
   const { devices, refresh: refreshDevices } = useDevicesStore()
   const { playingId, paused, positionMs, pause, stop } = usePlayerStore()
   const { session, record, togglePause, stop: stopRecording } = useSessionStore()
@@ -111,7 +112,9 @@ export function MainWindow(): React.JSX.Element {
         onPlay={() => selected && runRecordingCommand(selected.id, 'play')}
         onPause={() => (recording ? void togglePause() : pause())}
         hasItems={items.length > 0}
+        folder={folder}
         onOpenFolder={() => void window.api.invoke('shell:openRecordingsFolder')}
+        onChangeFolder={() => void chooseFolder()}
         onOpenAudioFile={() => void importAudioFile()}
         onClearList={() => void clearList()}
       />

@@ -30,7 +30,10 @@ interface TransportBarProps {
   /** Clear list… is greyed out on an empty list. */
   hasItems?: boolean
   onRecord?: () => void
+  /** Recordings folder, shown on the File button. */
+  folder?: string
   onOpenFolder?: () => void
+  onChangeFolder?: () => void
   onOpenAudioFile?: () => void
   onClearList?: () => void
   onStop?: () => void
@@ -44,7 +47,9 @@ export function TransportBar({
   state = 'idle',
   hasItems = false,
   onRecord,
+  folder,
   onOpenFolder,
+  onChangeFolder,
   onOpenAudioFile,
   onClearList,
   onStop,
@@ -73,7 +78,9 @@ export function TransportBar({
         className={styles.round}
         iconSize={ICON}
         hasItems={hasItems}
+        folder={folder}
         onOpenFolder={onOpenFolder}
+        onChangeFolder={onChangeFolder}
         onOpenAudioFile={onOpenAudioFile}
         onClearList={onClearList}
       />

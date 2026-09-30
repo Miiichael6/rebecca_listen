@@ -5,8 +5,8 @@
 
 import { MERGE_CHANNEL_LAYOUT, MERGE_SAMPLE_RATE } from '@shared/defaults'
 import type { AudioFormat } from '@shared/types'
-import type { FormatSettings } from '../audio/encoder/Encoder'
-import { fileCodecArgs, muxerArgs } from '../audio/encoder/ffmpegArgs'
+import type { FormatSettings } from '../../audio/encoder/Encoder'
+import { fileCodecArgs, muxerArgs } from '../../audio/encoder/ffmpegArgs'
 
 const QUIET = ['-hide_banner', '-nostats', '-loglevel', 'error']
 

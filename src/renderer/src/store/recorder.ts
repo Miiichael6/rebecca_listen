@@ -22,6 +22,8 @@ interface RecorderStore {
   /** Recording whose tags the Tag Editor shows. */
   tagsId: string | null
   notice: Notice | null
+  /** Where new recordings are saved. */
+  folder: string
   setSource: (source: SourceSelection) => Promise<void>
   setSourceListExpanded: (expanded: boolean) => Promise<void>
   setLevel: (percent: number) => void
@@ -36,6 +38,8 @@ interface RecorderStore {
   importAudioFile: () => Promise<void>
   /** Main asks for confirmation; the files stay on disk. */
   clearList: () => Promise<void>
+  /** Folder picker in main; a folder it cannot write in is refused with a notice. */
+  chooseFolder: () => Promise<void>
   dismissNotice: () => void
 }
 
@@ -54,6 +58,7 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
   editingId: null,
   tagsId: null,
   notice: null,
+  folder: '',
 
   setSource: async (source) => {
     await window.api.invoke('source:set', source)
@@ -93,6 +98,11 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
     set({ items })
   },
 
+  chooseFolder: async () => {
+    const folder = await window.api.invoke('files:chooseFolder')
+    if (folder) set({ folder })
+  },
+
   dismissNotice: () => set({ notice: null })
 }))
 
@@ -111,6 +121,8 @@ export async function loadRecorder(): Promise<void> {
       useRecorderStore.setState({ items, selectedId: kept ? selectedId : (items[0]?.id ?? null) })
     })
     window.api.on('notice', (notice) => useRecorderStore.setState({ notice }))
+    // The folder may also change from Options or a reset.
+    window.api.on('settings:changed', () => void loadFolder())
   }
   const [source, ui, level, items] = await Promise.all([
     window.api.invoke('source:get'),
@@ -119,4 +131,9 @@ export async function loadRecorder(): Promise<void> {
     window.api.invoke('history:list')
   ])
   useRecorderStore.setState({ source, sourceListExpanded: ui.sourceListExpanded, level, items })
+  await loadFolder()
+}
+
+async function loadFolder(): Promise<void> {
+  useRecorderStore.setState({ folder: await window.api.invoke('files:getFolder') })
 }

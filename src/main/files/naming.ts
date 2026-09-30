@@ -35,7 +35,7 @@ export function freePath(
  * recording never starts towards a folder it cannot write (`access(W_OK)`
  * only sees the read-only flag on Windows, not ACLs or Controlled Folder Access).
  */
-function ensureWritable(folder: string): void {
+export function checkWritableFolder(folder: string): void {
   try {
     mkdirSync(folder, { recursive: true })
   } catch (error) {
@@ -57,6 +57,6 @@ export function resolveOutputPath(
   format: AudioFormat
 ): string {
   const folder = recordingsFolder(configuredFolder)
-  ensureWritable(folder)
+  checkWritableFolder(folder)
   return freePath(folder, buildBaseName(now), format)
 }

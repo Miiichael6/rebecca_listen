@@ -13,7 +13,7 @@ La pestaña Files tiene su panel lateral (Auto Name · MP3 · WAV) y edita la ca
 
 ### Paso 2 — Auto Name
 - [ ] ☑ Enable
-- [ ] Carpeta de destino: input de solo lectura + botón "…" → IPC `dialog:pickFolder`
+- [ ] Carpeta de destino: input de solo lectura + botón "…" → IPC `files:chooseFolder` (ya existe, tarea 38)
 - [ ] Prefijo con placeholder "(Optional)" y `validatePrefix()` nuevo (caracteres `<>:"/\|?*` y nombres reservados de Windows) con error en rojo
 - [ ] Desplegable de plantillas (`YYYY-MM-DD_hh-mm-ss`, `YYYYMMDD_hhmmss`, `[hh-mm-ss]`, `Recording_###`, `Custom…`) ampliando `buildFileName()` de 12; con Custom… un input de tokens `{YYYY} {MM} {DD} {hh} {mm} {ss} {n}` con ayuda
 - [ ] Desplegable de formato .mp3 / .wav

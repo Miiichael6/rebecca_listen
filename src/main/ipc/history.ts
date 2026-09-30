@@ -10,7 +10,13 @@ import type { AudioFormat, HistoryItem } from '@shared/types'
 import { ffmpegPath } from '../audio/encoder/ffmpegBinary'
 import { probeDurationMs } from '../audio/encoder/runFfmpeg'
 import { history } from '../history'
-import { convert, mergeAll, readTags, writeTags, type AudioEditTools } from '../history/audioEdits'
+import {
+  convert,
+  mergeAll,
+  readTags,
+  writeTags,
+  type AudioEditTools
+} from '../history/edits/audioEdits'
 import { describeAudioFile } from '../history/audioFile'
 import { logger } from '../log'
 import { settings } from '../settings'

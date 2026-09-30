@@ -12,22 +12,13 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { ChevronRight, type LucideIcon } from 'lucide-react'
+import { clamp, enabledIndexes, MARGIN, stepFrom } from './menuNavigation'
+import { MenuRow } from './MenuRow'
+import { Submenu } from './Submenu'
+import type { ContextMenuItem } from './types'
 import styles from './ContextMenu.module.css'
 
-export interface ContextMenuItem {
-  key: string
-  label: string
-  icon?: LucideIcon
-  /** Shown on the right; the keys themselves are handled by whoever opens the menu. */
-  shortcut?: string
-  danger?: boolean
-  disabled?: boolean
-  /** Draws a line above the item. */
-  separated?: boolean
-  /** Makes the item open a submenu instead of being chosen. */
-  children?: ContextMenuItem[]
-}
+export type { ContextMenuItem }
 
 interface ContextMenuProps {
   x: number
@@ -44,102 +35,6 @@ interface OpenSubmenu {
   active: number
   /** Row of the item that opened it, to place it beside. */
   anchor: HTMLElement
-}
-
-/** Distance kept from the edges of the window. */
-const MARGIN = 6
-/** A submenu lines its first item up with the item that opened it. */
-const SUBMENU_OFFSET_Y = -4
-
-const clamp = (value: number, min: number, max: number): number =>
-  Math.max(min, Math.min(value, max))
-
-function enabledIndexes(items: ContextMenuItem[]): number[] {
-  return items.flatMap((item, index) => (item.disabled ? [] : [index]))
-}
-
-/** The enabled index `step` places away from `active`, going round at the ends. */
-function stepFrom(enabled: number[], active: number, step: number): number {
-  if (enabled.length === 0) return -1
-  const at = enabled.indexOf(active)
-  return at < 0 ? enabled[0] : enabled[(at + step + enabled.length) % enabled.length]
-}
-
-interface MenuRowProps {
-  item: ContextMenuItem
-  active: boolean
-  rowRef?: (row: HTMLDivElement | null) => void
-  onHover: () => void
-  onClick: () => void
-}
-
-function MenuRow({ item, active, rowRef, onHover, onClick }: MenuRowProps): React.JSX.Element {
-  const Icon = item.icon
-  const classes = [
-    styles.item,
-    item.danger && styles.danger,
-    item.separated && styles.separated,
-    active && styles.active
-  ]
-  return (
-    <div
-      ref={rowRef}
-      className={classes.filter(Boolean).join(' ')}
-      role="menuitem"
-      aria-disabled={item.disabled}
-      aria-haspopup={item.children ? 'menu' : undefined}
-      onMouseEnter={() => !item.disabled && onHover()}
-      onClick={(event) => {
-        event.stopPropagation()
-        onClick()
-      }}
-    >
-      {Icon && <Icon className={styles.icon} size={15} aria-hidden />}
-      <span className={styles.label}>{item.label}</span>
-      {item.shortcut && <kbd className={styles.shortcut}>{item.shortcut}</kbd>}
-      {item.children && <ChevronRight className={styles.icon} size={15} aria-hidden />}
-    </div>
-  )
-}
-
-interface SubmenuProps {
-  anchor: HTMLElement
-  items: ContextMenuItem[]
-  active: number
-  onHover: (index: number) => void
-  onChoose: (index: number) => void
-}
-
-function Submenu({ anchor, items, active, onHover, onChoose }: SubmenuProps): React.JSX.Element {
-  const menu = useRef<HTMLDivElement>(null)
-  const [position, setPosition] = useState({ left: 0, top: 0 })
-
-  // Measured before paint, like the menu itself.
-  useLayoutEffect(() => {
-    const box = menu.current?.getBoundingClientRect()
-    if (!box) return
-    const item = anchor.getBoundingClientRect()
-    const fitsRight = item.right + box.width + MARGIN <= window.innerWidth
-    const left = fitsRight ? item.right : item.left - box.width
-    setPosition({
-      left: clamp(left, MARGIN, window.innerWidth - box.width - MARGIN),
-      top: clamp(item.top + SUBMENU_OFFSET_Y, MARGIN, window.innerHeight - box.height - MARGIN)
-    })
-  }, [anchor])
-
-  return (
-    <div ref={menu} className={`${styles.menu} ${styles.submenu}`} style={position} role="menu">
-      {items.map((item, index) => (
-        <MenuRow
-          key={item.key}
-          item={item}
-          active={index === active}
-          onHover={() => onHover(index)}
-          onClick={() => onChoose(index)}
-        />
-      ))}
-    </div>
-  )
 }
 
 export function ContextMenu({

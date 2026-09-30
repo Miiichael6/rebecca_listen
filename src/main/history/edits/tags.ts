@@ -4,7 +4,7 @@
  */
 
 import type { AudioFormat, AudioTags } from '@shared/types'
-import { muxerArgs } from '../audio/encoder/ffmpegArgs'
+import { muxerArgs } from '../../audio/encoder/ffmpegArgs'
 
 /** Name of each tag for ffmpeg, which maps it to ID3 (MP3) or RIFF INFO (WAV). */
 const TAG_KEYS: Record<keyof AudioTags, string> = {

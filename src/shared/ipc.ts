@@ -82,8 +82,10 @@ export interface IpcInvoke {
    */
   'history:import': { req: void; res: string | null }
 
-  /** Folder picker; `null` when the user cancels. */
-  'dialog:selectFolder': { req: { current?: string }; res: string | null }
+  /** Folder new recordings go to (the default one while the setting is empty). */
+  'files:getFolder': { req: void; res: string }
+  /** Folder picker; the chosen folder is checked and saved, `null` when cancelled or refused. */
+  'files:chooseFolder': { req: void; res: string | null }
 
   /** Opens a file or folder with the system default app. */
   'shell:openPath': { req: { path: string }; res: void }
@@ -162,7 +164,8 @@ export const INVOKE_CHANNELS = [
   'history:merge',
   'history:readTags',
   'history:writeTags',
-  'dialog:selectFolder',
+  'files:getFolder',
+  'files:chooseFolder',
   'shell:openPath',
   'shell:showItemInFolder',
   'shell:openRecordingsFolder',

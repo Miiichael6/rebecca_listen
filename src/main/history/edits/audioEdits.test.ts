@@ -10,9 +10,9 @@ import { join } from 'path'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '@shared/defaults'
 import type { AudioFormat } from '@shared/types'
-import { ffmpegPath } from '../audio/encoder/ffmpegBinary'
+import { ffmpegPath } from '../../audio/encoder/ffmpegBinary'
 import { convert, mergeAll, readTags, writeTags, type AudioEditTools } from './audioEdits'
-import { history, HISTORY_FILE_NAME, initHistory } from '.'
+import { history, HISTORY_FILE_NAME, initHistory } from '..'
 import { EMPTY_TAGS } from './tags'
 
 const TIMEOUT_MS = 30_000

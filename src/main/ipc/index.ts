@@ -3,6 +3,7 @@
 import { app } from 'electron'
 import { APP_NAME } from '@shared/appInfo'
 import { registerAudioIpc } from './audio'
+import { registerFilesIpc } from './files'
 import { registerHistoryIpc } from './history'
 import { registerSettingsIpc } from './settings'
 import { handle } from './typed'
@@ -16,5 +17,6 @@ export function registerIpc(): void {
 
   registerSettingsIpc()
   registerAudioIpc()
+  registerFilesIpc()
   registerHistoryIpc()
 }
