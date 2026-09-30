@@ -42,7 +42,8 @@ describe('resolveSource', () => {
   })
 
   it('mixes the output with the microphone that was chosen, if it is still there', () => {
-    const mixed = (voiceId: string): ReturnType<typeof resolveSource> => resolveSource({ mode: 'mixed', voiceId }, DEVICES)
+    const mixed = (voiceId: string): ReturnType<typeof resolveSource> =>
+      resolveSource({ mode: 'mixed', voiceId }, DEVICES)
     expect(mixed('line')).toEqual({ kind: 'mixed', system: DEVICES[1], voice: DEVICES[3] })
     // Gone, or not a microphone: back to the default one.
     expect(mixed('usb')).toEqual({ kind: 'mixed', system: DEVICES[1], voice: DEVICES[2] })
