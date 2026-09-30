@@ -29,6 +29,7 @@ import type {
   SourceMode,
   SourceSelection,
   SystemSettings,
+  TranscriptionSettings,
   UiState,
   WavSettings
 } from '@shared/types'
@@ -103,6 +104,22 @@ function validateSystem(raw: unknown, fallback: SystemSettings): SystemSettings 
   }
 }
 
+function validateTranscription(
+  raw: unknown,
+  fallback: TranscriptionSettings
+): TranscriptionSettings {
+  return {
+    linkRebeccaWrites: booleanOr(rawAt(raw, 'linkRebeccaWrites'), fallback.linkRebeccaWrites),
+    rebeccaWritesExe: optionalPath(rawAt(raw, 'rebeccaWritesExe'), fallback.rebeccaWritesExe)
+  }
+}
+
+/** A path, or `null` when it was cleared; an empty path counts as cleared. */
+function optionalPath(value: unknown, fallback: string | null): string | null {
+  if (typeof value === 'string') return value.trim() === '' ? null : value
+  return value === null ? null : fallback
+}
+
 /**
  * One complete and valid `Settings`. Unknown keys are dropped; invalid ones fall
  * back to `fallback`, which is `DEFAULT_SETTINGS` when reading a file and the
@@ -112,7 +129,8 @@ export function validateSettings(raw: unknown, fallback: Settings = DEFAULT_SETT
   return {
     files: validateFiles(rawAt(raw, 'files'), fallback.files),
     hotkeys: validateHotkeys(rawAt(raw, 'hotkeys'), fallback.hotkeys),
-    system: validateSystem(rawAt(raw, 'system'), fallback.system)
+    system: validateSystem(rawAt(raw, 'system'), fallback.system),
+    transcription: validateTranscription(rawAt(raw, 'transcription'), fallback.transcription)
   }
 }
 

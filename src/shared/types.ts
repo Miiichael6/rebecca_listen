@@ -127,6 +127,19 @@ export interface SystemSettings {
   startRecordingOnLaunch: boolean
 }
 
+/** Live transcription in RebeccaWrites while recording (task 46). */
+export interface TranscriptionSettings {
+  /** "Vincular Transcripción con RebeccaWrites": send the audio being recorded. */
+  linkRebeccaWrites: boolean
+  /** `RebeccaWrites.exe` chosen by hand; `null` means "look for the installed one". */
+  rebeccaWritesExe: string | null
+}
+
+/** Whether RebeccaWrites is on this machine: the exe that would be opened, or `null`. */
+export interface RebeccaWritesStatus {
+  exe: string | null
+}
+
 /**
  * All persisted settings. The core only reads `files`; `hotkeys` and `system`
  * are declared now so tasks 23, 30 and 31 do not have to change this type.
@@ -135,6 +148,7 @@ export interface Settings {
   files: FilesSettings
   hotkeys: HotkeysSettings
   system: SystemSettings
+  transcription: TranscriptionSettings
 }
 
 export type SettingsSection = keyof Settings

@@ -16,6 +16,8 @@ import type { OpenRecording } from '../files/partFiles'
 import type { CaptureSource, CaptureTap } from './capture'
 import { describePlan, skipsSilence } from './devices'
 import type { Encoder, OutputSettings } from './encoder/Encoder'
+import { deferredLiveSink } from './live/deferredSink'
+import type { LiveLink, LiveSink } from './live/LiveLink'
 import { pauseToggle, transition, type SessionEffect, type SessionEvent } from './sessionMachine'
 import {
   addSilence,
@@ -40,6 +42,8 @@ export interface SessionDeps {
   addToHistory: (item: NewHistoryItem) => void
   /** Remembers the files being written, for the recovery after a crash (task 14). */
   journal: { add: (recording: OpenRecording) => void; remove: (path: string) => void }
+  /** Live transcription of what is recorded (task 46); without it, none. */
+  live?: LiveLink
   emit: SessionEmit
   log: { info: (message: string) => void; warn: (message: string) => void }
   now?: () => number
@@ -55,6 +59,8 @@ interface OpenFile {
   loopback: boolean
   /** `false` while paused: the blocks keep coming but are not written. */
   writing: boolean
+  /** Gets every block the encoder gets; `null` without live transcription. */
+  live: LiveSink | null
   createdAt: number
   stopTicker: () => void
 }
@@ -154,6 +160,7 @@ export class RecordingSession {
       timeline: startTimeline(tap.sampleRate, now),
       loopback: skipsSilence(tap.input),
       writing: true,
+      live: this.startLive(tap, path, now),
       createdAt: now,
       stopTicker: startTicker(SESSION_TICK_MS, () => this.deps.emit.state(this.snapshot()))
     }
@@ -179,20 +186,38 @@ export class RecordingSession {
     )
   }
 
+  /**
+   * Starting the live side takes a moment (finding RebeccaWrites): the
+   * recording does not wait for it, the deferred sink keeps the blocks.
+   */
+  private startLive(tap: CaptureTap, path: string, startedAt: number): LiveSink | null {
+    const live = this.deps.live
+    if (!live) return null
+    return deferredLiveSink(
+      live.start({ path, startedAt, sampleRate: tap.sampleRate, channels: tap.channels })
+    )
+  }
+
   private write(file: OpenFile, samples: Float32Array): void {
     if (!file.writing) return
     const frames = samples.length / file.tap.channels
     const arrival = this.now()
     if (file.loopback) this.fillSilence(file, silenceBefore(file.timeline, arrival, frames))
-    void file.encoder.write(samples)
+    this.writeAudio(file, samples)
     file.timeline.framesWritten += frames
     file.timeline.lastArrivalMs = arrival
   }
 
   private fillSilence(file: OpenFile, frames: number): void {
     if (frames <= 0) return
-    void file.encoder.write(new Float32Array(frames * file.tap.channels))
+    this.writeAudio(file, new Float32Array(frames * file.tap.channels))
     addSilence(file.timeline, frames)
+  }
+
+  /** The file and the live transcription get the same audio, so their times match. */
+  private writeAudio(file: OpenFile, samples: Float32Array): void {
+    void file.encoder.write(samples)
+    file.live?.write(samples)
   }
 
   /** Silence up to now, when the loopback went quiet before the pause or the stop. */
@@ -231,8 +256,10 @@ export class RecordingSession {
     if (!file) return
     this.fillTail(file)
     this.detach()
+    let finalPath: string | null = null
     try {
       const final = await file.encoder.close()
+      finalPath = final.path
       this.deps.journal.remove(file.path)
       this.deps.addToHistory({
         id: randomUUID(),
@@ -256,11 +283,13 @@ export class RecordingSession {
     } catch (error) {
       this.notifyError(`Could not save the recording: ${(error as Error).message}`)
     }
+    await file.live?.end(finalPath)
   }
 
   private async abortFile(message: string): Promise<void> {
     const file = this.detach()
     await file?.encoder.abort()
+    await file?.live?.end(null)
     this.notifyError(message)
   }
 

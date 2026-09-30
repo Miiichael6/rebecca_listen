@@ -261,5 +261,9 @@ export const DEFAULT_SETTINGS: Settings = {
     keepHistory: true,
     startWithWindows: false,
     startRecordingOnLaunch: false
+  },
+  transcription: {
+    linkRebeccaWrites: false,
+    rebeccaWritesExe: null
   }
 }

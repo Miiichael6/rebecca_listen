@@ -5,6 +5,7 @@ import type { CaptureTap } from './capture'
 import type { InputPlan } from './devices'
 import { sine } from './dsp/testSignals'
 import type { Encoder, FinalFile, OutputSettings, PcmFormat } from './encoder/Encoder'
+import type { LiveLink, LiveRecording } from './live/LiveLink'
 import { RecordingSession } from './session'
 
 const RATE = 48_000
@@ -82,7 +83,11 @@ interface Harness {
 const MIXED: InputPlan = { kind: 'mixed', system: device('render'), voice: device('capture') }
 
 /** A capture that plays whatever the test pushes, on a clock the test moves. */
-function setup(kind: AudioDevice['kind'] | 'mixed' = 'capture', openError?: Error): Harness {
+function setup(
+  kind: AudioDevice['kind'] | 'mixed' = 'capture',
+  openError?: Error,
+  live?: LiveLink
+): Harness {
   let clock = 0
   let data: (samples: Float32Array) => void = () => {}
   let lost: (reason: string) => void = () => {}
@@ -114,6 +119,7 @@ function setup(kind: AudioDevice['kind'] | 'mixed' = 'capture', openError?: Erro
       add: (recording) => journal.set(recording.path, recording),
       remove: (path) => journal.delete(path)
     },
+    live,
     emit: { state: () => {}, notice: (notice) => notices.push(notice) },
     log: { info: () => {}, warn: () => {} },
     now: () => clock
@@ -265,5 +271,73 @@ describe('RecordingSession', () => {
     expect((await session.record()).state).toBe('recording')
     await session.stop()
     expect(history).toHaveLength(1)
+  })
+})
+
+/** A live link that counts the frames it gets and how it ended. */
+function fakeLive(fails = false): LiveLink & {
+  started: LiveRecording[]
+  frames: number
+  ended: (string | null)[]
+} {
+  const live = {
+    started: [] as LiveRecording[],
+    frames: 0,
+    ended: [] as (string | null)[],
+    start: async (recording: LiveRecording) => {
+      live.started.push(recording)
+      if (fails) throw new Error('RebeccaWrites is gone')
+      return {
+        write: (samples: Float32Array) => {
+          live.frames += samples.length / recording.channels
+        },
+        end: async (finalPath: string | null) => {
+          live.ended.push(finalPath)
+        }
+      }
+    }
+  }
+  return live
+}
+
+describe('RecordingSession · live transcription', () => {
+  it('sends the live side exactly what the file gets, silence fills included and pauses left out', async () => {
+    const live = fakeLive()
+    const { session, encoder, play, wait } = setup('render', undefined, live)
+    await session.record()
+    play(1)
+    wait(2000)
+    play(1)
+    await session.togglePause()
+    play(3)
+    await session.togglePause()
+    play(1)
+    await session.stop()
+
+    expect(live.started).toEqual([
+      { path: PATH, startedAt: expect.any(Number), sampleRate: RATE, channels: CHANNELS }
+    ])
+    expect(live.frames).toBe(encoder.frames)
+    expect(live.ended).toEqual([PATH])
+  })
+
+  it('ends the live side without media when the recording is aborted', async () => {
+    const live = fakeLive()
+    const { session, encoder, play } = setup('capture', undefined, live)
+    await session.record()
+    play(1)
+    encoder.die('ffmpeg stopped while recording')
+    await vi.waitFor(() => expect(live.ended).toEqual([null]))
+  })
+
+  it('records as usual when the live side cannot start', async () => {
+    const live = fakeLive(true)
+    const { session, encoder, history, notices, play } = setup('capture', undefined, live)
+    await session.record()
+    play(2)
+    await session.stop()
+    expect(encoder.durationMs).toBeCloseTo(2000, 6)
+    expect(history).toHaveLength(1)
+    expect(notices).toEqual([])
   })
 })

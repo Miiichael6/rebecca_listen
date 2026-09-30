@@ -17,6 +17,7 @@ import type {
   HistoryItem,
   MeterFrame,
   Notice,
+  RebeccaWritesStatus,
   SessionSnapshot,
   Settings,
   SettingsUpdate,
@@ -104,6 +105,14 @@ export interface IpcInvoke {
   'updates:download': { req: void; res: UpdateStatus }
   /** Quits, installs the downloaded release and reopens the app; refused while recording. */
   'updates:install': { req: void; res: { ok: boolean } }
+
+  /** Looks for RebeccaWrites: the exe chosen by hand, the installed one or the default folder. */
+  'rebeccaWrites:status': { req: void; res: RebeccaWritesStatus }
+  /**
+   * "Localizar RebeccaWrites…": file picker that only accepts `RebeccaWrites.exe`;
+   * the chosen exe is saved. Resolves with the status after it (`null` when cancelled).
+   */
+  'rebeccaWrites:locate': { req: void; res: RebeccaWritesStatus | null }
 }
 
 // ---------------------------------------------------------------------------
@@ -183,7 +192,9 @@ export const INVOKE_CHANNELS = [
   'updates:status',
   'updates:check',
   'updates:download',
-  'updates:install'
+  'updates:install',
+  'rebeccaWrites:status',
+  'rebeccaWrites:locate'
 ] as const satisfies readonly InvokeChannel[]
 
 export const EVENT_CHANNELS = [

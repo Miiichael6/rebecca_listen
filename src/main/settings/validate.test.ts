@@ -93,6 +93,38 @@ describe('validateSettings · hotkeys and system', () => {
   })
 })
 
+describe('validateSettings · transcription', () => {
+  it('starts unlinked and without a chosen RebeccaWrites', () => {
+    // A file written before task 46 has no `transcription` section at all.
+    const settings = validateSettings({ files: {} })
+    expect(settings.transcription).toEqual({ linkRebeccaWrites: false, rebeccaWritesExe: null })
+  })
+
+  it('keeps the checkbox and the chosen path', () => {
+    const exe = 'D:\\Apps\\RebeccaWrites\\RebeccaWrites.exe'
+    const settings = validateSettings({
+      transcription: { linkRebeccaWrites: true, rebeccaWritesExe: exe }
+    })
+    expect(settings.transcription).toEqual({ linkRebeccaWrites: true, rebeccaWritesExe: exe })
+  })
+
+  it('treats an empty or broken path as not chosen', () => {
+    const fallback = {
+      ...DEFAULT_SETTINGS,
+      transcription: { linkRebeccaWrites: false, rebeccaWritesExe: 'C:\\old.exe' }
+    }
+    const blank = validateSettings({ transcription: { rebeccaWritesExe: '  ' } }, fallback)
+    expect(blank.transcription.rebeccaWritesExe).toBeNull()
+    const cleared = validateSettings({ transcription: { rebeccaWritesExe: null } }, fallback)
+    expect(cleared.transcription.rebeccaWritesExe).toBeNull()
+    const broken = validateSettings(
+      { transcription: { linkRebeccaWrites: 'yes', rebeccaWritesExe: 3 } },
+      fallback
+    )
+    expect(broken.transcription).toEqual(fallback.transcription)
+  })
+})
+
 describe('validateSettings · shape', () => {
   it('returns the defaults for anything that is not an object', () => {
     for (const raw of [undefined, null, 7, 'settings', [], {}]) {

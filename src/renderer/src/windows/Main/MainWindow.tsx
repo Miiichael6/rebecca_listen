@@ -1,6 +1,6 @@
 /**
  * Main window (spec §4, look of plan/images/app.png): a panel with Source,
- * Level and the VU meter; a monitor with the timer, the waveform and the state
+ * Level, the VU meter and the RebeccaWrites link; a monitor with the timer, the waveform and the state
  * badges; the playback bar, the recording list and the transport bar.
  *
  * Everything is live: Level drives the gain in main (monitor and file), and
@@ -12,6 +12,7 @@
 
 import { LevelSlider } from '../../components/LevelSlider'
 import { PlaybackBar } from '../../components/PlaybackBar'
+import { RebeccaWritesLink } from '../../components/RebeccaWritesLink/RebeccaWritesLink'
 import { RecordingList } from '../../components/RecordingList/RecordingList'
 import { MicrophonePicker } from '../../components/MicrophonePicker/MicrophonePicker'
 import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
@@ -64,6 +65,7 @@ export function MainWindow(): React.JSX.Element {
         )}
         <LevelSlider percent={recorder.level} onChange={recorder.setLevel} />
         <VuMeter subscribe={onMeterFrame} />
+        <RebeccaWritesLink disabled={recording} />
       </section>
       <section className={`${styles.panel} ${styles.monitor}`}>
         <Timer elapsedMs={main.timerMs} paused={main.timerPaused} />

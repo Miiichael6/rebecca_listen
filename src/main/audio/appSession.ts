@@ -9,6 +9,7 @@ import { history } from '../history'
 import { logger } from '../log'
 import { recordingJournal } from '../files/appRecovery'
 import { resolveOutputPath } from '../files/naming'
+import { createRebeccaWritesLink } from '../rebeccaWrites/liveLink'
 import { FfmpegEncoder } from './encoder/FfmpegEncoder'
 import { ffmpegPath } from './encoder/ffmpegBinary'
 import type { OutputSettings } from './encoder/Encoder'
@@ -31,6 +32,13 @@ export function initSession(emit: SessionEmit): RecordingSession {
     nextFile,
     addToHistory: (item) => history.add(item),
     journal: recordingJournal,
+    live: createRebeccaWritesLink({
+      warn: (message) => {
+        logger.warn(message)
+        emit.notice({ level: 'warn', message })
+      },
+      info: (message) => logger.info(message)
+    }),
     emit,
     log: { info: (message) => logger.info(message), warn: (message) => logger.warn(message) }
   })
