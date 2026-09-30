@@ -1,0 +1,31 @@
+/* Sits in the drag strip of the title bar, so it opts out of dragging. */
+.button {
+  margin-left: auto;
+  padding: 2px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-control-hover);
+}
+
+.button:disabled {
+  cursor: default;
+}
+
+.available,
+.ready {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.error {
+  border-color: var(--color-record);
+  color: var(--color-record);
+}

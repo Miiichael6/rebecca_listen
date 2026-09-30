@@ -6,6 +6,7 @@ import { registerAudioIpc } from './audio'
 import { registerFilesIpc } from './files'
 import { registerHistoryIpc } from './history'
 import { registerSettingsIpc } from './settings'
+import { registerUpdatesIpc } from './updates'
 import { handle } from './typed'
 
 export function registerIpc(): void {
@@ -19,4 +20,5 @@ export function registerIpc(): void {
   registerAudioIpc()
   registerFilesIpc()
   registerHistoryIpc()
+  registerUpdatesIpc()
 }

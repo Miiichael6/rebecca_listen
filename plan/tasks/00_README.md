@@ -53,7 +53,7 @@ Además se recortó dentro de las tareas del núcleo:
 ## Decisiones pendientes (bloquean tareas)
 
 - [x] **D1** ~~Toolchain de Rust para el sidecar de captura (§3.2).~~ **Resuelta 2026-09-29:** instalados Rust 1.98.1 (`stable-x86_64-pc-windows-msvc`) y Visual Studio Community 2022 con el workload VCTools. `cargo` compila y enlaza; `cpal` 0.18.2 enumera los dispositivos sin la crate `windows`. Desbloquea **05** y la cadena de audio (06–10, 13 en adelante).
-- [ ] **D2** Actualizaciones: ¿hay un repositorio (p. ej. GitHub Releases) para publicar con `electron-updater`, o se quita `electron-updater` y el bloque `publish` que hoy apunta a `example.com`? (la pestaña About y "Check for updates" ya están eliminados) → afecta **35** (paso 1)
+- [x] **D2** ~~Actualizaciones: ¿hay un repositorio (p. ej. GitHub Releases) para publicar con `electron-updater`, o se quita `electron-updater` y el bloque `publish` que hoy apunta a `example.com`? (la pestaña About y "Check for updates" ya están eliminados) → afecta **35** (paso 1)~~ **Resuelta 2026-09-30:** GitHub Releases (`Miiichael6/rebecca_listen`), ver tarea 44.
 - [ ] **D3** Firma del instalador: ¿se distribuye sin firmar (Windows SmartScreen avisará al instalar) o hay un certificado de firma de código? → afecta **35** (paso 1)
 
 ## Tablero
@@ -92,6 +92,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 41 | [Micrófono del modo mixto](done/41_microfono_del_mix.md) | 6 Lista | 16, 07 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 | 42 | [Arquitectura hexagonal en los componentes grandes](done/42_arquitectura_hexagonal_componentes.md) | 6 Lista | 17, 37 | ✅ Terminada |
 | 43 | [Barra de transporte unificada](pending/despues/43_barra_de_transporte_unificada.md) | 6 Lista | 13, 17, 42 | ⬜ Después |
+| 44 | [Actualizar desde la app](done/44_actualizar_desde_la_app.md) | 12 Empaquetado | 35 | ✅ Terminada (falta probar con un release real) |
 
 \* **No dependen del sidecar**: 11 y 12 se adelantan a su fase porque solo necesitan 02 y 03. Con D1 ya resuelta (2026-09-29) el orden natural vuelve a ser el numérico.
 

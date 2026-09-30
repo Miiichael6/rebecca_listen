@@ -22,6 +22,7 @@ import type {
   SettingsUpdate,
   SourceSelection,
   UiState,
+  UpdateStatus,
   WaveFrame
 } from './types'
 
@@ -95,6 +96,14 @@ export interface IpcInvoke {
   'shell:openRecordingsFolder': { req: void; res: void }
   /** Opens the current log file (System tab, "Open Log File"). */
   'shell:openLogFile': { req: void; res: void }
+
+  'updates:status': { req: void; res: UpdateStatus }
+  /** Looks for a newer release; the result also arrives on `updates:changed`. */
+  'updates:check': { req: void; res: UpdateStatus }
+  /** Downloads the release found by `updates:check`. */
+  'updates:download': { req: void; res: UpdateStatus }
+  /** Quits, installs the downloaded release and reopens the app; refused while recording. */
+  'updates:install': { req: void; res: { ok: boolean } }
 }
 
 // ---------------------------------------------------------------------------
@@ -108,6 +117,7 @@ export interface IpcEvents {
   'wave:frame': WaveFrame
   'history:changed': HistoryItem[]
   'settings:changed': Settings
+  'updates:changed': UpdateStatus
   notice: Notice
 }
 
@@ -169,7 +179,11 @@ export const INVOKE_CHANNELS = [
   'shell:openPath',
   'shell:showItemInFolder',
   'shell:openRecordingsFolder',
-  'shell:openLogFile'
+  'shell:openLogFile',
+  'updates:status',
+  'updates:check',
+  'updates:download',
+  'updates:install'
 ] as const satisfies readonly InvokeChannel[]
 
 export const EVENT_CHANNELS = [
@@ -179,6 +193,7 @@ export const EVENT_CHANNELS = [
   'wave:frame',
   'history:changed',
   'settings:changed',
+  'updates:changed',
   'notice'
 ] as const satisfies readonly EventChannel[]
 

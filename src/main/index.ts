@@ -15,6 +15,7 @@ import { registerIpc } from './ipc'
 import { broadcast } from './ipc/typed'
 import { initLog, logger } from './log'
 import { initSettings } from './settings'
+import { scheduleAutoCheck } from './updates/updater'
 import { createMainWindow } from './window'
 
 // Before anything else, so an early failure is already in the log file.
@@ -55,6 +56,7 @@ app.whenReady().then(() => {
   openMainWindow().webContents.once('did-finish-load', () => {
     void recoverUnfinished(unfinished, (notice) => broadcast('notice', notice))
   })
+  scheduleAutoCheck()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openMainWindow()

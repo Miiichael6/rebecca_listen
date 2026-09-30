@@ -209,6 +209,16 @@ export interface AppInfo {
   version: string
 }
 
+/** Update state; main pushes it on `updates:changed` at every change. */
+export type UpdateStatus =
+  | { state: 'idle' }
+  | { state: 'checking' }
+  | { state: 'upToDate' }
+  | { state: 'available'; version: string }
+  | { state: 'downloading'; version: string; percent: number }
+  | { state: 'ready'; version: string }
+  | { state: 'error'; message: string }
+
 /** One-off message for the renderer (device lost, write error...). */
 export interface Notice {
   level: 'info' | 'warn' | 'error'
