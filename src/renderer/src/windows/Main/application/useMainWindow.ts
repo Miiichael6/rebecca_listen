@@ -11,7 +11,7 @@ import { usePlayerStore } from '../../../store/player'
 import { loadRecorder, useRecorderStore } from '../../../store/recorder'
 import { loadSession, useSessionStore } from '../../../store/session'
 import { runRecordingCommand } from '../../../recordingCommands/infrastructure/storesAdapter'
-import { openRecordingsFolder } from '../infrastructure/mainApi'
+import { openOptions, openRecordingsFolder } from '../infrastructure/mainApi'
 
 export interface MainWindowModel {
   recorder: ReturnType<typeof useRecorderStore.getState>
@@ -28,6 +28,7 @@ export interface MainWindowModel {
   refreshDevices: () => void
   runRecordingCommand: (id: string, command: RecordingCommand) => void
   openRecordingsFolder: () => void
+  openOptions: () => void
   onRecord: () => void
   onStop: () => void
   onPause: () => void
@@ -66,6 +67,7 @@ export function useMainWindow(): MainWindowModel {
     refreshDevices: () => void refreshDevices(),
     runRecordingCommand,
     openRecordingsFolder,
+    openOptions,
     onRecord: () => {
       // Playing through the speakers would end up in a loopback recording.
       player.stop()

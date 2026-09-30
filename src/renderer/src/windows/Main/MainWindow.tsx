@@ -97,6 +97,7 @@ export function MainWindow(): React.JSX.Element {
         onChangeFolder={() => void recorder.chooseFolder()}
         onOpenAudioFile={() => void recorder.importAudioFile()}
         onClearList={() => void recorder.clearList()}
+        onOptions={main.openOptions}
       />
       {tagged && <TagEditor key={tagged.id} item={tagged} onClose={recorder.closeTags} />}
     </div>

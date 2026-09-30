@@ -5,6 +5,7 @@ import { APP_NAME } from '@shared/appInfo'
 import { registerAudioIpc } from './audio'
 import { registerFilesIpc } from './files'
 import { registerHistoryIpc } from './history'
+import { registerOptionsIpc } from './options'
 import { registerRebeccaWritesIpc } from './rebeccaWrites'
 import { registerSettingsIpc } from './settings'
 import { registerUpdatesIpc } from './updates'
@@ -18,6 +19,7 @@ export function registerIpc(): void {
   }))
 
   registerSettingsIpc()
+  registerOptionsIpc()
   registerAudioIpc()
   registerFilesIpc()
   registerHistoryIpc()

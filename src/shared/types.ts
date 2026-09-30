@@ -153,6 +153,10 @@ export interface Settings {
 
 export type SettingsSection = keyof Settings
 
+/** Tabs of the Options window, in the order they are shown. */
+export const OPTIONS_TABS = ['files', 'hotkeys', 'system'] as const
+export type OptionsTab = (typeof OPTIONS_TABS)[number]
+
 /** A patch on one section, discriminated so the payload stays typed. */
 export type SettingsUpdate = {
   [S in SettingsSection]: { section: S; patch: Partial<Settings[S]> }

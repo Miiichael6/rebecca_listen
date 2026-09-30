@@ -24,3 +24,6 @@ export const WINDOW_COLORS = {
 
 /** Height of the title bar the page draws; the native buttons take the same height. */
 export const TITLE_BAR_HEIGHT = 32
+
+/** Options window: modal, fixed size (spec §5). */
+export const OPTIONS_WINDOW_SIZE = { width: 440, height: 560 } as const

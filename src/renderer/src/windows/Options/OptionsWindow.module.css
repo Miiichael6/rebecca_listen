@@ -1,0 +1,124 @@
+.window {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 10px 12px 12px;
+  gap: 10px;
+  background: var(--color-background);
+}
+
+.tabs {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex: none;
+  gap: 2px;
+  margin-bottom: -10px;
+}
+
+.tab {
+  flex: 0 0 auto;
+  min-width: 74px;
+  padding: 5px 14px 6px;
+  border: 1px solid var(--color-border-strong);
+  border-bottom: 0;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  color: var(--color-tab-text);
+  opacity: 0.65;
+  cursor: pointer;
+}
+
+.tab.active {
+  padding-top: 7px;
+  font-weight: 600;
+  opacity: 1;
+}
+
+.files {
+  background: var(--color-tab-files);
+}
+
+.hotkeys {
+  background: var(--color-tab-hotkeys);
+}
+
+.system {
+  background: var(--color-tab-system);
+}
+
+/* The top edge of the page wears the color of its tab, so both read as one piece. */
+.page {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-top: 3px solid var(--tab-color);
+  border-radius: 0 var(--radius-panel) var(--radius-panel) var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.page_files {
+  --tab-color: var(--color-tab-files);
+}
+
+.page_hotkeys {
+  --tab-color: var(--color-tab-hotkeys);
+}
+
+.page_system {
+  --tab-color: var(--color-tab-system);
+}
+
+.heading {
+  margin: 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  padding-top: 12px;
+  overflow-y: auto;
+  color: var(--color-text-muted);
+}
+
+.footer {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+}
+
+.button {
+  min-width: 72px;
+  height: 26px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-control-background);
+  cursor: pointer;
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-control-hover);
+}
+
+.button:disabled {
+  background: var(--color-control-disabled);
+  color: var(--color-text-disabled);
+  cursor: default;
+}

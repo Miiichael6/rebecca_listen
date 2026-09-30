@@ -48,6 +48,12 @@
   --color-vu-yellow: #e8d23a;
   --color-vu-red: #e5433f;
 
+  /* Options tabs, measured from plan/images/05, 07 and 08 */
+  --color-tab-files: #b8d7f4;
+  --color-tab-hotkeys: #ffe6e3;
+  --color-tab-system: #e7fcc4;
+  --color-tab-text: #1d2530;
+
   /* Typography */
   --font-ui:
     'Segoe UI Variable Text', 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif;

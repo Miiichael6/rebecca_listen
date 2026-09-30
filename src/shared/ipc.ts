@@ -17,6 +17,7 @@ import type {
   HistoryItem,
   MeterFrame,
   Notice,
+  OptionsTab,
   RebeccaWritesStatus,
   SessionSnapshot,
   Settings,
@@ -42,6 +43,9 @@ export interface IpcInvoke {
   /** Main window UI state kept across restarts; `set` returns it as stored. */
   'ui:get': { req: void; res: UiState }
   'ui:set': { req: Partial<UiState>; res: UiState }
+
+  /** Opens the modal Options window (focuses it when open), on `tab` when given. */
+  'options:open': { req: { tab?: OptionsTab }; res: void }
 
   /** Endpoints usable right now; disconnected ones are not listed. */
   'devices:list': { req: void; res: AudioDevice[] }
@@ -163,6 +167,7 @@ export const INVOKE_CHANNELS = [
   'settings:reset',
   'ui:get',
   'ui:set',
+  'options:open',
   'devices:list',
   'source:get',
   'source:set',

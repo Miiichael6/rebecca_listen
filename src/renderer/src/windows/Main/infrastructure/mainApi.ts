@@ -8,6 +8,10 @@ export const onMeterFrame = (listener: (frame: MeterFrame) => void): (() => void
 export const onWaveFrame = (listener: (frame: WaveFrame) => void): (() => void) =>
   window.api.on('wave:frame', listener)
 
+export const openOptions = (): void => {
+  void window.api.invoke('options:open', {})
+}
+
 export const openRecordingsFolder = (): void => {
   void window.api.invoke('shell:openRecordingsFolder')
 }
