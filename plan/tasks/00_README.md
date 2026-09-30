@@ -91,6 +91,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 40 | ["Open file location" abre el Explorador](done/40_abrir_ubicacion_con_explorer.md) | 6 Lista | 37 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 | 41 | [Micrófono del modo mixto](done/41_microfono_del_mix.md) | 6 Lista | 16, 07 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 | 42 | [Arquitectura hexagonal en los componentes grandes](done/42_arquitectura_hexagonal_componentes.md) | 6 Lista | 17, 37 | ✅ Terminada |
+| 43 | [Barra de transporte unificada](pending/despues/43_barra_de_transporte_unificada.md) | 6 Lista | 13, 17, 42 | ⬜ Después |
 
 \* **No dependen del sidecar**: 11 y 12 se adelantan a su fase porque solo necesitan 02 y 03. Con D1 ya resuelta (2026-09-29) el orden natural vuelve a ser el numérico.
 
