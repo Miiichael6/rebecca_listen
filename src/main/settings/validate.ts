@@ -17,9 +17,11 @@ import {
   MP3_BITRATES_KBPS,
   MP3_MODES,
   MP3_VBR_QUALITY,
+  NAMING_TEMPLATE_IDS,
   SAMPLE_RATES,
   WAV_BIT_DEPTHS
 } from '@shared/defaults'
+import { validatePattern, validatePrefix } from '@shared/naming'
 import type { WindowBounds } from '@shared/settingsSchema'
 import type {
   FilesSettings,
@@ -66,10 +68,23 @@ function validateWav(raw: unknown, fallback: WavSettings): WavSettings {
   }
 }
 
+/** Text that goes into file names; one Windows would refuse keeps the fallback. */
+function nameText(
+  value: unknown,
+  problem: (text: string) => string | null,
+  fallback: string
+): string {
+  return typeof value === 'string' && problem(value) === null ? value : fallback
+}
+
 function validateFiles(raw: unknown, fallback: FilesSettings): FilesSettings {
   return {
     // An empty folder means "resolve the default destination at runtime" (task 12).
+    autoName: booleanOr(rawAt(raw, 'autoName'), fallback.autoName),
     folder: stringOr(rawAt(raw, 'folder'), fallback.folder),
+    prefix: nameText(rawAt(raw, 'prefix'), validatePrefix, fallback.prefix),
+    template: oneOf(rawAt(raw, 'template'), NAMING_TEMPLATE_IDS, fallback.template),
+    customPattern: nameText(rawAt(raw, 'customPattern'), validatePattern, fallback.customPattern),
     format: oneOf(rawAt(raw, 'format'), AUDIO_FORMATS, fallback.format),
     mp3: validateMp3(rawAt(raw, 'mp3'), fallback.mp3),
     wav: validateWav(rawAt(raw, 'wav'), fallback.wav)

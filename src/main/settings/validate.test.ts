@@ -41,6 +41,25 @@ describe('validateSettings · files', () => {
     expect(below.files.wav.bitDepth).toBe(lowest(WAV_BIT_DEPTHS))
   })
 
+  it('keeps the naming fields only while Windows would accept them', () => {
+    const fine = validateSettings({
+      files: { prefix: 'Call ', template: 'counter', customPattern: '{hh}h', autoName: false }
+    })
+    expect(fine.files).toMatchObject({
+      prefix: 'Call ',
+      template: 'counter',
+      customPattern: '{hh}h',
+      autoName: false
+    })
+
+    const refused = validateSettings({
+      files: { prefix: 'a?b', template: 'weekly', customPattern: '' }
+    })
+    expect(refused.files.prefix).toBe('')
+    expect(refused.files.template).toBe('bracketed')
+    expect(refused.files.customPattern).not.toBe('')
+  })
+
   it('snaps a value between two options to the closest one', () => {
     const settings = validateSettings({ files: { mp3: { sampleRate: 47000, bitrateKbps: 200 } } })
     expect(settings.files.mp3.sampleRate).toBe(48000)

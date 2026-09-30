@@ -3,6 +3,7 @@
  * there is anything to apply and which tab a hash asks for.
  */
 
+import { validatePattern, validatePrefix } from '@shared/naming'
 import { OPTIONS_TABS, type OptionsTab, type Settings, type SettingsUpdate } from '@shared/types'
 
 export const DEFAULT_OPTIONS_TAB: OptionsTab = 'files'
@@ -28,6 +29,15 @@ export function changedSections(base: Settings, draft: Settings): SettingsUpdate
 
 export function isDirty(base: Settings, draft: Settings): boolean {
   return changedSections(base, draft).length > 0
+}
+
+/** Whether the draft holds text Windows would refuse in a file name (OK and Apply wait). */
+export function hasProblems(draft: Settings): boolean {
+  const { prefix, template, customPattern } = draft.files
+  return (
+    validatePrefix(prefix) !== null ||
+    (template === 'custom' && validatePattern(customPattern) !== null)
+  )
 }
 
 /** Format and folder are read when a file starts, so a recording keeps the old ones. */

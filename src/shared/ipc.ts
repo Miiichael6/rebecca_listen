@@ -16,6 +16,7 @@ import type {
   AudioTags,
   HistoryItem,
   MeterFrame,
+  NamingSettings,
   Notice,
   OptionsTab,
   RebeccaWritesStatus,
@@ -92,6 +93,10 @@ export interface IpcInvoke {
   'files:getFolder': { req: void; res: string }
   /** Folder picker; the chosen folder is checked and saved, `null` when cancelled or refused. */
   'files:chooseFolder': { req: void; res: string | null }
+  /** Folder picker for the Options draft: checked but not saved, `null` when cancelled or refused. */
+  'files:pickFolder': { req: void; res: string | null }
+  /** Full path the next recording would get with these Files settings (the "For example" line). */
+  'files:previewPath': { req: NamingSettings; res: string }
 
   /** Opens a file or folder with the system default app. */
   'shell:openPath': { req: { path: string }; res: void }
@@ -190,6 +195,8 @@ export const INVOKE_CHANNELS = [
   'history:writeTags',
   'files:getFolder',
   'files:chooseFolder',
+  'files:pickFolder',
+  'files:previewPath',
   'shell:openPath',
   'shell:showItemInFolder',
   'shell:openRecordingsFolder',

@@ -33,7 +33,7 @@ Documento fuente: [../PROMPT_rebecca_listen.md](../PROMPT_rebecca_listen.md) · 
 
 **Núcleo (19 tareas):** grabar el sonido del equipo, el micrófono o los dos a la vez, que el archivo se guarde solo y se pueda encontrar y escuchar, más instalador y pruebas: **01–17, 35 y 36**. Es lo que el original da en su plan Basic (micrófono, sistema y ambos), sin el límite de 5 min.
 
-**Aplazado (5 tareas en [pending/despues/](pending/despues/)):** ~~20 ventana Options~~ (hecha 2026-09-30) · **22** pestaña Files (carpeta, formato, bitrate) · **23** pestañas Hotkeys y System · **27** botón Split · **30** hotkeys globales · **31** bandeja y arranque con Windows. Se harán solo cuando el núcleo esté terminado y funcionando; para retomar una, se mueve a `pending/` y se pone ⬜ Pendiente.
+**Aplazado (5 tareas en [pending/despues/](pending/despues/)):** ~~20 ventana Options~~ (hecha 2026-09-30) · ~~22 pestaña Files~~ (hecha 2026-09-30) · **23** pestañas Hotkeys y System · **27** botón Split · **30** hotkeys globales · **31** bandeja y arranque con Windows. Se harán solo cuando el núcleo esté terminado y funcionando; para retomar una, se mueve a `pending/` y se pone ⬜ Pendiente.
 
 **Eliminado del proyecto (11 tareas, 2026-09-28):** ~~reproductor propio · menú contextual~~ (recuperados en la 17, 2026-09-29) · Properties y arrastrar fuera · pestañas Effects/VAS/FLL · perfiles de configuración · AGC · supresión de ruido (RNNoise) · VAS · FLL · Schedule · convertir formato · recortar audio. No están en ninguna carpeta: si alguna vez se quieren, se replanifican desde la spec (§6–§8, §11, §12) con el siguiente número libre (37 en adelante).
 
@@ -47,7 +47,7 @@ Además se recortó dentro de las tareas del núcleo:
 | Capa de i18n y ~~modo oscuro~~ | Textos en inglés en los componentes; tema oscuro único de `images/app.png` (17) |
 | Diálogo de recuperación de `.part` | Se repara solo al arrancar y se añade a la lista |
 | Estados `waiting` y `scheduled` de la máquina | Solo `idle`, `recording` y `paused` |
-| Plantillas de nombre, prefijo y "Guardar como" | Un solo nombre: `[YYYY-MM-DD][hh-mm-ss]` (las plantillas vuelven con 22) |
+| Plantillas de nombre, prefijo y "Guardar como" | ~~Un solo nombre~~ → plantillas, prefijo y Save as hechos en 22 (2026-09-30) |
 | Compensación de deriva en la mezcla | Medida en 16: 0 ppm con el micro USB, sin compensar; `Mixer.setRatioAdjust` queda listo si otro hardware lo pide |
 
 ## Decisiones pendientes (bloquean tareas)
@@ -77,8 +77,8 @@ Además se recortó dentro de las tareas del núcleo:
 | 15 | [Resampler con ratio ajustable](done/15_resampler.md) | 5 Mezcla | 09 | ✅ Terminada (paso 3.1 espera la escucha del usuario) |
 | 16 | [Mezcla de sistema + micrófono](done/16_mixer_y_deriva.md) | 5 Mezcla | 13, 15 | ✅ Terminada (paso 3 y escucha de 5 min pendientes del usuario) |
 | 17 | [Historial, lista de grabaciones y abrir archivos](done/17_historial_y_lista.md) | 6 Lista | 13 | ✅ Terminada |
-| 20 | [Ventana Options, pestañas y borrador](done/20_options_ventana_y_borrador.md) | 7 Options | 03, 04 | ✅ Terminada (pestañas vacías hasta 22 y 23) |
-| 22 | [Pestaña Files (Auto Name y formatos)](pending/despues/22_pestana_files.md) | 7 Options | 12, 20 | ⬜ Después |
+| 20 | [Ventana Options, pestañas y borrador](done/20_options_ventana_y_borrador.md) | 7 Options | 03, 04 | ✅ Terminada (Hotkeys y System vacías hasta 23) |
+| 22 | [Pestaña Files (Auto Name y formatos)](done/22_pestana_files.md) | 7 Options | 12, 20 | ✅ Terminada |
 | 23 | [Pestañas Hotkeys y System](pending/despues/23_pestanas_hotkeys_y_system.md) | 7 Options | 20 | ⬜ Después |
 | 27 | [Corte sin pérdida (Smart Split) y botón Split](pending/despues/27_corte_sin_perdida_split.md) | 9 Split | 13 | ⬜ Después |
 | 30 | [Hotkeys globales](pending/despues/30_hotkeys_globales.md) | 10 Sistema | 23, 27 | ⬜ Después |

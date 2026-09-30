@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS } from '@shared/defaults'
 import type { Settings } from '@shared/types'
-import { appliesFromNextFile, changedSections, isDirty, parseOptionsTab } from './draft'
+import {
+  appliesFromNextFile,
+  changedSections,
+  hasProblems,
+  isDirty,
+  parseOptionsTab
+} from './draft'
 
 function copy(): Settings {
   return structuredClone(DEFAULT_SETTINGS)
@@ -31,6 +37,19 @@ describe('changedSections', () => {
     const updates = changedSections(DEFAULT_SETTINGS, draft)
     expect(updates).toEqual([{ section: 'system', patch: draft.system }])
     expect(isDirty(DEFAULT_SETTINGS, draft)).toBe(true)
+  })
+})
+
+describe('hasProblems', () => {
+  it('flags a prefix or a custom pattern Windows would refuse', () => {
+    expect(hasProblems(copy())).toBe(false)
+    const badPrefix = copy()
+    badPrefix.files.prefix = 'a|b'
+    expect(hasProblems(badPrefix)).toBe(true)
+    const emptyCustom = copy()
+    emptyCustom.files.template = 'custom'
+    emptyCustom.files.customPattern = ''
+    expect(hasProblems(emptyCustom)).toBe(true)
   })
 })
 

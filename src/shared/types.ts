@@ -104,13 +104,29 @@ export interface WavSettings {
   bitDepth: WavBitDepth
 }
 
+/** Naming conventions of the Auto Name panel (spec §9.1); `custom` uses `customPattern`. */
+export type NamingTemplate = 'bracketed' | 'dashed' | 'compact' | 'time' | 'counter' | 'custom'
+
 export interface FilesSettings {
+  /** Auto Name "Enable": off asks for the file name ("Save as") before each recording. */
+  autoName: boolean
   /** Destination folder; empty means "resolve the default at runtime". */
   folder: string
+  /** Text put before the generated name; may be empty. */
+  prefix: string
+  template: NamingTemplate
+  /** Tokens `{YYYY} {MM} {DD} {hh} {mm} {ss} {n}`, used when `template` is `custom`. */
+  customPattern: string
   format: AudioFormat
   mp3: Mp3Settings
   wav: WavSettings
 }
+
+/** What a file name depends on: folder, prefix, convention and format. */
+export type NamingSettings = Pick<
+  FilesSettings,
+  'folder' | 'prefix' | 'template' | 'customPattern' | 'format'
+>
 
 /** Commands that can take a global hotkey (spec §10.1). */
 export type HotkeyCommand = 'file' | 'record' | 'pause' | 'play' | 'stop' | 'cut'

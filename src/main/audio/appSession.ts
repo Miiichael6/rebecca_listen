@@ -8,7 +8,10 @@ import { settings } from '../settings'
 import { history } from '../history'
 import { logger } from '../log'
 import { recordingJournal } from '../files/appRecovery'
+import type { BrowserWindow } from 'electron'
+import type { SessionSnapshot } from '@shared/types'
 import { resolveOutputPath } from '../files/naming'
+import { askRecordingPath } from '../files/saveAs'
 import { createRebeccaWritesLink } from '../rebeccaWrites/liveLink'
 import { FfmpegEncoder } from './encoder/FfmpegEncoder'
 import { ffmpegPath } from './encoder/ffmpegBinary'
@@ -17,11 +20,31 @@ import { acquireCapture } from './monitor'
 import { RecordingSession, type SessionEmit } from './session'
 
 let session: RecordingSession | null = null
+/** Path typed in "Save as" for the recording about to start; used once. */
+let chosenPath: string | null = null
 
 function nextFile(): { path: string; output: OutputSettings } {
-  const { folder, format, mp3, wav } = settings.get().files
+  const files = settings.get().files
+  const { format, mp3, wav } = files
   const output: OutputSettings = format === 'mp3' ? { format, ...mp3 } : { format, ...wav }
-  return { path: resolveOutputPath(folder, new Date(), format), output }
+  const path = chosenPath ?? resolveOutputPath(files, new Date())
+  chosenPath = null
+  return { path, output }
+}
+
+/**
+ * Starts a recording. With Auto Name off the file name is asked first, and
+ * cancelling the dialog records nothing.
+ */
+export async function startRecording(parent: BrowserWindow | null): Promise<SessionSnapshot> {
+  if (!session) throw new Error('recording started before initSession()')
+  const files = settings.get().files
+  if (!files.autoName && !session.isActive()) {
+    const path = await askRecordingPath(parent, files)
+    if (!path) return session.snapshot()
+    chosenPath = path
+  }
+  return session.record()
 }
 
 export function initSession(emit: SessionEmit): RecordingSession {

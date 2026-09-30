@@ -1,7 +1,7 @@
 /** Devices, source, level, monitoring, recording session and opening recordings. */
 
 import { mkdirSync } from 'fs'
-import { shell } from 'electron'
+import { BrowserWindow, shell } from 'electron'
 import { openFolder } from '../files/explorer'
 import { recordingsFolder } from '../files/naming'
 import { history } from '../history'
@@ -9,7 +9,7 @@ import { logger } from '../log'
 import { settings } from '../settings'
 import { audioEngine } from '../audio/engine/SidecarAudioEngine'
 import { initMonitor, refreshMonitor, setMonitorLevel } from '../audio/monitor'
-import { initSession } from '../audio/appSession'
+import { initSession, startRecording } from '../audio/appSession'
 import { broadcast, handle } from './typed'
 
 async function open(path: string): Promise<void> {
@@ -56,7 +56,9 @@ export function registerAudioIpc(): void {
     setMonitorLevel(settings.getLevel())
   })
 
-  handle('session:record', () => session.record())
+  handle('session:record', (_, event) =>
+    startRecording(BrowserWindow.fromWebContents(event.sender))
+  )
   handle('session:pause', () => session.togglePause())
   handle('session:stop', () => session.stop())
   // Split comes with task 27: until then it changes nothing.

@@ -8,8 +8,8 @@ import { closeSync, existsSync, mkdirSync, openSync, rmSync } from 'fs'
 import { join } from 'path'
 import { app } from 'electron'
 import { DEFAULT_FOLDER_NAME, NAME_COLLISION_SUFFIX, WRITE_PROBE_NAME } from '@shared/defaults'
-import { buildBaseName } from '@shared/naming'
-import type { AudioFormat } from '@shared/types'
+import { buildNamedBase, namingPattern, usesCounter } from '@shared/naming'
+import type { AudioFormat, NamingSettings } from '@shared/types'
 
 export function recordingsFolder(configured: string): string {
   return configured || join(app.getPath('desktop'), DEFAULT_FOLDER_NAME)
@@ -50,13 +50,34 @@ export function checkWritableFolder(folder: string): void {
   }
 }
 
-/** Throws with a readable message if the folder cannot be created or written. */
-export function resolveOutputPath(
-  configuredFolder: string,
+/**
+ * The path the next recording would get, without touching the disk beyond
+ * `exists`. With `{n}` in the pattern the first free number is used; any
+ * other name gets ` (1)`, ` (2)`... on collisions.
+ */
+export function plannedPath(
+  files: NamingSettings,
   now: Date,
-  format: AudioFormat
+  exists: (path: string) => boolean = existsSync
 ): string {
-  const folder = recordingsFolder(configuredFolder)
-  checkWritableFolder(folder)
-  return freePath(folder, buildBaseName(now), format)
+  const folder = recordingsFolder(files.folder)
+  if (!usesCounter(namingPattern(files))) {
+    return freePath(folder, buildNamedBase(files, now), files.format, exists)
+  }
+  const taken = (path: string): boolean => exists(path) || exists(`${path}.part`)
+  let counter = 1
+  const pathOf = (): string => join(folder, `${buildNamedBase(files, now, counter)}.${files.format}`)
+  while (taken(pathOf())) counter += 1
+  return pathOf()
+}
+
+/** Throws with a readable message if the folder cannot be created or written. */
+export function resolveOutputPath(files: NamingSettings, now: Date): string {
+  checkWritableFolder(recordingsFolder(files.folder))
+  return plannedPath(files, now)
+}
+
+/** A name typed in "Save as" always ends in the extension of its format. */
+export function withExtension(path: string, format: AudioFormat): string {
+  return path.toLowerCase().endsWith(`.${format}`) ? path : `${path}.${format}`
 }

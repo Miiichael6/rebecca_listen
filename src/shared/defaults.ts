@@ -9,6 +9,7 @@ import type {
   AudioFormat,
   HotkeyCommand,
   Mp3Mode,
+  NamingTemplate,
   Settings,
   SourceSelection,
   UiState,
@@ -49,10 +50,32 @@ export const LEVEL_SEND_MS = 33
 export const DEFAULT_FOLDER_NAME = 'Rebecca Listen Recordings'
 
 /**
- * The only naming template of the core. The alternatives, the prefix and the
- * "Save as" dialog come back with task 22.
+ * Naming conventions of the Auto Name panel (task 22): the label the dropdown
+ * shows and the token pattern it expands (see `@shared/naming`).
  */
-export const DEFAULT_NAMING_TEMPLATE = '[YYYY-MM-DD][hh-mm-ss]'
+export const NAMING_TEMPLATES: Record<
+  Exclude<NamingTemplate, 'custom'>,
+  { label: string; pattern: string }
+> = {
+  bracketed: { label: '[YYYY-MM-DD][hh-mm-ss]', pattern: '[{YYYY}-{MM}-{DD}][{hh}-{mm}-{ss}]' },
+  dashed: { label: 'YYYY-MM-DD_hh-mm-ss', pattern: '{YYYY}-{MM}-{DD}_{hh}-{mm}-{ss}' },
+  compact: { label: 'YYYYMMDD_hhmmss', pattern: '{YYYY}{MM}{DD}_{hh}{mm}{ss}' },
+  time: { label: '[hh-mm-ss]', pattern: '[{hh}-{mm}-{ss}]' },
+  counter: { label: 'Recording_###', pattern: 'Recording_{n}' }
+}
+export const NAMING_TEMPLATE_IDS: readonly NamingTemplate[] = [
+  'bracketed',
+  'dashed',
+  'compact',
+  'time',
+  'counter',
+  'custom'
+]
+export const DEFAULT_NAMING_TEMPLATE: NamingTemplate = 'bracketed'
+/** What the Custom… input starts with. */
+export const DEFAULT_CUSTOM_PATTERN = '{YYYY}-{MM}-{DD} {hh}.{mm}.{ss}'
+/** Digits of the `{n}` counter: `Recording_001`. */
+export const COUNTER_DIGITS = 3
 
 /**
  * Empty file created and deleted to check the recordings folder is writable
@@ -231,7 +254,11 @@ export const COLORS = {
 export const DEFAULT_SETTINGS: Settings = {
   files: {
     // Empty: main resolves `<Desktop>/DEFAULT_FOLDER_NAME` on first use.
+    autoName: true,
     folder: '',
+    prefix: '',
+    template: DEFAULT_NAMING_TEMPLATE,
+    customPattern: DEFAULT_CUSTOM_PATTERN,
     format: DEFAULT_FORMAT,
     mp3: {
       sampleRate: DEFAULT_SAMPLE_RATE,

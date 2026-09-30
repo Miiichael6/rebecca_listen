@@ -4,17 +4,20 @@
  */
 
 import { useEffect, useState } from 'react'
-import type { OptionsTab } from '@shared/types'
+import type { OptionsTab, Settings } from '@shared/types'
 import { useOptionsDraft, useDraftDirty } from '../../../store/optionsDraft'
 import { loadSession, useSessionStore } from '../../../store/session'
 import { loadSettings, useSettingsStore } from '../../../store/settings'
-import { appliesFromNextFile, parseOptionsTab } from '../domain/draft'
+import { appliesFromNextFile, hasProblems, parseOptionsTab } from '../domain/draft'
 
 export interface OptionsWindowModel {
-  ready: boolean
+  /** `null` until the settings arrive. */
+  draft: Settings | null
   tab: OptionsTab
   selectTab: (tab: OptionsTab) => void
   dirty: boolean
+  /** A field holds a value that cannot be stored: OK and Apply wait for a fix. */
+  problems: boolean
   /** Format or folder changed while recording: they take effect on the next file. */
   nextFileNote: boolean
   ok: () => void
@@ -44,10 +47,11 @@ export function useOptionsWindow(): OptionsWindowModel {
   }, [settings, base, open])
 
   return {
-    ready: draft !== null,
+    draft,
     tab,
     selectTab: setTab,
     dirty,
+    problems: draft ? hasProblems(draft) : false,
     nextFileNote: base && draft ? appliesFromNextFile(base, draft, recording) : false,
     ok: () => void apply().then(() => window.close()),
     cancel: () => window.close(),

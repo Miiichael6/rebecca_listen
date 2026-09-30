@@ -31,6 +31,7 @@
   --color-text: #e8eaed;
   --color-text-muted: #9aa3ad;
   --color-text-disabled: #5d656e;
+  --color-error: #ff6b6b;
 
   /* Lines and controls */
   --color-border: #30363d;

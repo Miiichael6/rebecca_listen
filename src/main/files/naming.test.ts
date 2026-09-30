@@ -2,12 +2,21 @@ import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_SETTINGS } from '@shared/defaults'
 import { buildFileName } from '@shared/naming'
+import type { NamingSettings } from '@shared/types'
 
 // `naming.ts` imports `app` only for the default folder, which is not tested here.
 vi.mock('electron', () => ({ app: { getPath: () => '' } }))
 
-const { checkWritableFolder, freePath, resolveOutputPath } = await import('./naming')
+const { checkWritableFolder, freePath, plannedPath, resolveOutputPath, withExtension } =
+  await import('./naming')
+
+const naming = (folder: string, format: 'mp3' | 'wav' = 'mp3'): NamingSettings => ({
+  ...DEFAULT_SETTINGS.files,
+  folder,
+  format
+})
 
 describe('buildFileName', () => {
   it('pads every field with zeros', () => {
@@ -43,16 +52,16 @@ describe('resolveOutputPath', () => {
 
   it('creates the folder and leaves only the recordings in it', () => {
     const folder = join(root, 'a', 'Rebecca Listen Recordings')
-    expect(resolveOutputPath(folder, now, 'mp3')).toBe(join(folder, '[2026-09-29][09-05-07].mp3'))
+    expect(resolveOutputPath(naming(folder), now)).toBe(join(folder, '[2026-09-29][09-05-07].mp3'))
     expect(existsSync(folder)).toBe(true)
     expect(readdirSync(folder)).toEqual([])
   })
 
   it('never returns a name that is already on disk', () => {
     const folder = join(root, 'b')
-    const first = resolveOutputPath(folder, now, 'wav')
+    const first = resolveOutputPath(naming(folder, 'wav'), now)
     writeFileSync(first, '')
-    expect(resolveOutputPath(folder, now, 'wav')).toBe(
+    expect(resolveOutputPath(naming(folder, 'wav'), now)).toBe(
       join(folder, '[2026-09-29][09-05-07] (1).wav')
     )
   })
@@ -60,9 +69,37 @@ describe('resolveOutputPath', () => {
   it('explains a folder that cannot be created', () => {
     const blocker = join(root, 'file')
     writeFileSync(blocker, '')
-    expect(() => resolveOutputPath(join(blocker, 'rec'), now, 'mp3')).toThrow(
+    expect(() => resolveOutputPath(naming(join(blocker, 'rec')), now)).toThrow(
       /Cannot create the recordings folder/
     )
+  })
+})
+
+describe('plannedPath', () => {
+  const folder = 'rec'
+  const now = new Date(2026, 8, 29, 9, 5, 7)
+
+  it('puts the prefix before the chosen convention', () => {
+    const files = { ...naming(folder, 'wav'), prefix: 'Call ', template: 'compact' as const }
+    expect(plannedPath(files, now, () => false)).toBe(join(folder, 'Call 20260929_090507.wav'))
+  })
+
+  it('takes the first free number for the counter instead of (1)', () => {
+    const files = { ...naming(folder), template: 'counter' as const }
+    const taken = new Set([join(folder, 'Recording_001.mp3'), join(folder, 'Recording_002.mp3.part')])
+    expect(plannedPath(files, now, (p) => taken.has(p))).toBe(join(folder, 'Recording_003.mp3'))
+  })
+
+  it('expands a custom pattern', () => {
+    const files = { ...naming(folder), template: 'custom' as const, customPattern: '{DD}.{MM} {hh}h' }
+    expect(plannedPath(files, now, () => false)).toBe(join(folder, '29.09 09h.mp3'))
+  })
+})
+
+describe('withExtension', () => {
+  it('adds the extension only when it is missing', () => {
+    expect(withExtension('D:/a/talk', 'mp3')).toBe('D:/a/talk.mp3')
+    expect(withExtension('D:/a/talk.MP3', 'mp3')).toBe('D:/a/talk.MP3')
   })
 })
 

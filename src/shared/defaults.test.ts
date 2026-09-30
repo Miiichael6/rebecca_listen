@@ -10,6 +10,7 @@ import {
   DEFAULT_MP3_MODE,
   DEFAULT_MP3_VBR_QUALITY,
   DEFAULT_NAMING_TEMPLATE,
+  NAMING_TEMPLATES,
   DEFAULT_SAMPLE_RATE,
   DEFAULT_SETTINGS,
   DEFAULT_WAV_BIT_DEPTH,
@@ -104,7 +105,7 @@ describe('engine constants and style', () => {
   })
 
   it('names files and collisions as the spec says', () => {
-    expect(DEFAULT_NAMING_TEMPLATE).toBe('[YYYY-MM-DD][hh-mm-ss]')
+    expect(NAMING_TEMPLATES[DEFAULT_NAMING_TEMPLATE].label).toBe('[YYYY-MM-DD][hh-mm-ss]')
     expect(NAME_COLLISION_SUFFIX(1)).toBe(' (1)')
   })
 
