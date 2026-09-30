@@ -10,6 +10,7 @@
 
 import { MAIN_WINDOW_SIZE } from '@shared/appInfo'
 import {
+  APP_LANGUAGES,
   AUDIO_FORMATS,
   CHANNEL_COUNTS,
   DEFAULT_SETTINGS,
@@ -115,7 +116,8 @@ function validateSystem(raw: unknown, fallback: SystemSettings): SystemSettings 
     startRecordingOnLaunch: booleanOr(
       rawAt(raw, 'startRecordingOnLaunch'),
       fallback.startRecordingOnLaunch
-    )
+    ),
+    language: oneOf(rawAt(raw, 'language'), APP_LANGUAGES, fallback.language)
   }
 }
 

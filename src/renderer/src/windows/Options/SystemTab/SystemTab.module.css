@@ -1,0 +1,81 @@
+.tab {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  color: var(--color-text);
+}
+
+/* Groups are split by a line, as in plan/images/08. */
+.group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.group:first-child {
+  padding-top: 0;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  line-height: 1.4;
+}
+
+.badge {
+  flex: none;
+  padding: 1px 8px;
+  border-radius: 3px;
+  background: var(--color-badge);
+  color: var(--color-badge-text);
+  font-weight: 600;
+}
+
+.button {
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-control-background);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: var(--color-control-hover);
+}
+
+.language {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.select {
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-control-background);
+  color: var(--color-text);
+}
+
+.version {
+  margin: auto 0 0;
+  padding-top: 8px;
+  color: var(--color-text-disabled);
+  font-size: var(--font-size-small);
+}

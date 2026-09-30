@@ -6,6 +6,7 @@
  */
 
 import type {
+  AppLanguage,
   AudioFormat,
   HotkeyCommand,
   Mp3Mode,
@@ -124,6 +125,9 @@ export const HOTKEY_COMMANDS: readonly HotkeyCommand[] = [
   'stop',
   'cut'
 ]
+
+export const APP_LANGUAGES: readonly AppLanguage[] = ['en', 'es']
+export const DEFAULT_LANGUAGE: AppLanguage = 'en'
 
 // ---------------------------------------------------------------------------
 // Engine constants (spec §2.1, §4.1)
@@ -287,7 +291,8 @@ export const DEFAULT_SETTINGS: Settings = {
     alwaysOnTop: false,
     keepHistory: true,
     startWithWindows: false,
-    startRecordingOnLaunch: false
+    startRecordingOnLaunch: false,
+    language: DEFAULT_LANGUAGE
   },
   transcription: {
     linkRebeccaWrites: false,

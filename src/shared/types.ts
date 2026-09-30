@@ -134,6 +134,9 @@ export type HotkeyCommand = 'file' | 'record' | 'pause' | 'play' | 'stop' | 'cut
 /** Electron accelerator per command; `null` is the "None" of the original. */
 export type HotkeysSettings = Record<HotkeyCommand, string | null>
 
+/** Languages of the UI (spec §10.2); the texts themselves arrive with task 31. */
+export type AppLanguage = 'en' | 'es'
+
 export interface SystemSettings {
   minimizeToTray: boolean
   alwaysShowTrayIcon: boolean
@@ -141,6 +144,7 @@ export interface SystemSettings {
   keepHistory: boolean
   startWithWindows: boolean
   startRecordingOnLaunch: boolean
+  language: AppLanguage
 }
 
 /** Live transcription in RebeccaWrites while recording (task 46). */

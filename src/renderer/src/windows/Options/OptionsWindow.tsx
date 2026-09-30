@@ -2,12 +2,13 @@
  * Options window (spec §5, look of plan/images/05, 07 and 08): three colored
  * tabs (Files, Hotkeys, System) over a page with a bold title, and OK / Cancel /
  * Apply at the bottom. It edits a draft that is stored only on Apply or OK.
- * The Hotkeys and System contents arrive with task 23.
  */
 
 import { OPTIONS_TABS, type OptionsTab } from '@shared/types'
 import { useOptionsWindow } from './application/useOptionsWindow'
 import { FilesTab } from './FilesTab/FilesTab'
+import { HotkeysTab } from './HotkeysTab/HotkeysTab'
+import { SystemTab } from './SystemTab/SystemTab'
 import styles from './OptionsWindow.module.css'
 
 const TAB_TITLES: Record<OptionsTab, string> = {
@@ -41,7 +42,8 @@ export function OptionsWindow(): React.JSX.Element {
         <h1 className={styles.heading}>{TAB_TITLES[tab]}</h1>
         <div className={styles.body}>
           {options.draft && tab === 'files' && <FilesTab files={options.draft.files} />}
-          {options.draft && tab !== 'files' && 'TODO'}
+          {options.draft && tab === 'hotkeys' && <HotkeysTab hotkeys={options.draft.hotkeys} />}
+          {options.draft && tab === 'system' && <SystemTab system={options.draft.system} />}
         </div>
       </section>
 

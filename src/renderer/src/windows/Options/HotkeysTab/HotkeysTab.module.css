@@ -1,0 +1,89 @@
+.tab {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  color: var(--color-text);
+}
+
+.table {
+  width: 100%;
+  border: 1px solid var(--color-border-strong);
+  border-collapse: collapse;
+}
+
+.table th {
+  padding: 4px 6px;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface-sunken);
+  font-weight: 600;
+}
+
+.table td {
+  width: 50%;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.table tbody tr:nth-child(even) {
+  background: var(--color-row-even);
+}
+
+.table tbody tr:hover {
+  background: var(--color-control-hover);
+}
+
+.table tbody tr.selected {
+  background: var(--color-row-selected);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.capture {
+  display: flex;
+  gap: 6px;
+}
+
+.input {
+  flex: 0 1 180px;
+  min-width: 0;
+  height: 24px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-control-background);
+  color: var(--color-text);
+  caret-color: transparent;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.invalid {
+  border-color: var(--color-error);
+}
+
+.assign {
+  min-width: 60px;
+  height: 24px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+  background: var(--color-control-background);
+  cursor: pointer;
+}
+
+.assign:hover {
+  background: var(--color-control-hover);
+}
+
+.error {
+  color: var(--color-error);
+  font-size: var(--font-size-small);
+}

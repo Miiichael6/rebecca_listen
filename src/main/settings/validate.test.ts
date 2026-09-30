@@ -110,6 +110,11 @@ describe('validateSettings · hotkeys and system', () => {
     expect(settings.system.minimizeToTray).toBe(DEFAULT_SETTINGS.system.minimizeToTray)
     expect(settings.system.startWithWindows).toBe(DEFAULT_SETTINGS.system.startWithWindows)
   })
+
+  it('keeps a known language and falls back to English for anything else', () => {
+    expect(validateSettings({ system: { language: 'es' } }).system.language).toBe('es')
+    expect(validateSettings({ system: { language: 'fr' } }).system.language).toBe('en')
+  })
 })
 
 describe('validateSettings · transcription', () => {
