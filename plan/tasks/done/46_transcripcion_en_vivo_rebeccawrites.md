@@ -17,9 +17,9 @@ Con la casilla **"Vincular Transcripción con RebeccaWrites"** marcada, al graba
 ### Contrato entre las dos apps (igual en la tarea 27 de RebeccaWrites)
 | Momento | Listen hace | RebeccaWrites hace |
 |---|---|---|
-| Empieza a grabar | Crea `%TEMP%\rebecca-live\<id>.pcm` (PCM s16le, 16 kHz, mono, sin cabecera) y ejecuta `RebeccaWrites.exe --live-start "<pcm>" --live-name "<nombre>"` | Crea una entrada "en vivo" en la barra lateral con ese nombre, la selecciona, lee el archivo según crece y transcribe por ventanas de ~30 s (`-l auto`, con su modelo y backend) |
+| Empieza a grabar | Crea `%TEMP%\rebecca-live\<id>.pcm` (PCM s16le, 16 kHz, mono, sin cabecera) y ejecuta `RebeccaWrites.exe --live-start="<pcm>" --live-name="<nombre>"` | Crea una entrada "en vivo" en la barra lateral con ese nombre, la selecciona, lee el archivo según crece y transcribe por ventanas de ~30 s (`-l auto`, con su modelo y backend) |
 | Graba / pausa | Añade muestras al `.pcm` (en pausa no añade) | Sigue leyendo; si no llega audio, espera |
-| Para | Cierra el `.pcm` y ejecuta `RebeccaWrites.exe --live-end "<pcm>" --live-media "<ruta final .mp3/.wav>"` | Transcribe lo que falte, cambia la entrada a la grabación final (se puede reproducir y exportar como cualquier otra) y borra el `.pcm` |
+| Para | Cierra el `.pcm` y ejecuta `RebeccaWrites.exe --live-end="<pcm>" --live-media="<ruta final .mp3/.wav>"` | Transcribe lo que falte, cambia la entrada a la grabación final (se puede reproducir y exportar como cualquier otra) y borra el `.pcm` |
 | Listen se cierra de golpe | — | Si el `.pcm` lleva 2 min sin crecer y no llegó `--live-end`, cierra la entrada con lo transcrito |
 
 `<id>` = marca de tiempo del inicio de la grabación; el nombre es el de la grabación (sin extensión).
@@ -57,3 +57,4 @@ Con la casilla **"Vincular Transcripción con RebeccaWrites"** marcada, al graba
 - 2026-09-30 — El exe elegido a mano va primero (antes que registro y ruta por defecto): si el usuario lo localizó, manda. El nombre real sale del desinstalador (`rebeccawrites.exe`, en minúsculas); se busca en el registro con `reg query /f RebeccaWrites /d /e` (~0,1 s, volcar HKLM entero tardaba 1,5 s).
 - 2026-09-30 — `deferredSink` guarda los bloques mientras se localiza y lanza RebeccaWrites: la grabación no espera y el `.pcm` queda alineado con el archivo final (medido: 6,31 s en ambos).
 - 2026-09-30 — Verificado con exe falso porque la 27 de RebeccaWrites sigue pendiente (la instalada metería el `.pcm` en su cola). Quedan para la prueba conjunta: paso 10 y criterios 2, 4 y el "Localizar…" con RebeccaWrites renombrada (no se desinstaló la real para probarlo).
+- 2026-09-30 — Contrato cambiado a `--flag=valor` al probar con la 27 de RebeccaWrites: con ella ya abierta, Chromium entrega a `second-instance` las opciones delante y los valores sueltos al final, y `--flag valor` perdía la pareja.

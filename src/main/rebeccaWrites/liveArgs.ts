@@ -25,11 +25,16 @@ export function liveName(recordingPath: string): string {
   return basename(recordingPath, extname(recordingPath))
 }
 
+/**
+ * Always `--flag=value`: when RebeccaWrites is already open, Chromium hands it
+ * the switches first and the loose values last, so `--flag value` loses the pairing.
+ */
 export function liveStartArgs(pcmPath: string, name: string): string[] {
-  return ['--live-start', pcmPath, '--live-name', name]
+  return [`--live-start=${pcmPath}`, `--live-name=${name}`]
 }
 
 /** Without `media` (the recording was aborted) RebeccaWrites closes the entry with what it has. */
 export function liveEndArgs(pcmPath: string, media: string | null): string[] {
-  return media ? ['--live-end', pcmPath, '--live-media', media] : ['--live-end', pcmPath]
+  const end = `--live-end=${pcmPath}`
+  return media ? [end, `--live-media=${media}`] : [end]
 }

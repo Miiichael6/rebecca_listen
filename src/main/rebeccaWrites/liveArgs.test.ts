@@ -14,26 +14,21 @@ describe('live contract with RebeccaWrites', () => {
     expect(liveName('C:\\Rec\\[2026-09-30][10-00-00].wav')).toBe('[2026-09-30][10-00-00]')
   })
 
-  it('builds the start and end arguments, spaces and all', () => {
+  it('builds the start and end arguments as --flag=value, spaces and all', () => {
     const pcm = 'C:\\Temp\\rebecca-live\\1.pcm'
     expect(liveStartArgs(pcm, 'reunión teams')).toEqual([
-      '--live-start',
-      pcm,
-      '--live-name',
-      'reunión teams'
+      `--live-start=${pcm}`,
+      '--live-name=reunión teams'
     ])
     expect(liveEndArgs(pcm, 'C:\\Rec\\reunión teams.mp3')).toEqual([
-      '--live-end',
-      pcm,
-      '--live-media',
-      'C:\\Rec\\reunión teams.mp3'
+      `--live-end=${pcm}`,
+      '--live-media=C:\\Rec\\reunión teams.mp3'
     ])
   })
 
   it('ends without media when the recording was aborted', () => {
     expect(liveEndArgs('C:\\Temp\\rebecca-live\\1.pcm', null)).toEqual([
-      '--live-end',
-      'C:\\Temp\\rebecca-live\\1.pcm'
+      '--live-end=C:\\Temp\\rebecca-live\\1.pcm'
     ])
   })
 })
