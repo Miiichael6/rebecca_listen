@@ -4,7 +4,7 @@
  */
 
 import type { RecordingCommand } from '@shared/types'
-import { canRun } from '../lib/recordingCommandAvailability'
+import { canRun, parseFormatCommand } from '../lib/recordingCommandAvailability'
 import { usePlayerStore } from './player'
 import { useRecorderStore } from './recorder'
 import { useSessionStore } from './session'
@@ -22,6 +22,16 @@ export function runRecordingCommand(id: string, command: RecordingCommand): void
     return
   }
 
+  const formatCommand = parseFormatCommand(command)
+  if (formatCommand?.action === 'convert') {
+    void window.api.invoke('history:convert', { id, format: formatCommand.format })
+    return
+  }
+  if (formatCommand?.action === 'merge') {
+    void window.api.invoke('history:merge', { format: formatCommand.format })
+    return
+  }
+
   switch (command) {
     case 'play':
       // Playing through the speakers would end up in a loopback recording.
@@ -32,6 +42,11 @@ export function runRecordingCommand(id: string, command: RecordingCommand): void
       break
     case 'rename':
       recorder.startRename(id)
+      break
+    case 'tags':
+      // Saving replaces the file, which Windows refuses while it is playing.
+      if (player.playingId === id) player.stop()
+      recorder.openTags(id)
       break
     case 'duplicate':
       void window.api.invoke('history:duplicate', { id })
@@ -47,6 +62,9 @@ export function runRecordingCommand(id: string, command: RecordingCommand): void
       // Windows keeps a file in use from going to the Recycle Bin.
       if (player.playingId === id) player.stop()
       void window.api.invoke(command === 'remove' ? 'history:remove' : 'history:delete', { id })
+      break
+    case 'clearAll':
+      void recorder.clearList()
       break
   }
 }

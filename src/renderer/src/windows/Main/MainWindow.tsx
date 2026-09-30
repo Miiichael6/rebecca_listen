@@ -16,6 +16,7 @@ import { PlaybackBar } from '../../components/PlaybackBar'
 import { RecordingList } from '../../components/RecordingList'
 import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
 import { StatusBar } from '../../components/StatusBar'
+import { TagEditor } from '../../components/TagEditor'
 import { Timer } from '../../components/Timer'
 import { TransportBar } from '../../components/TransportBar'
 import { VuMeter } from '../../components/VuMeter'
@@ -33,11 +34,11 @@ const onWaveFrame = (listener: (frame: WaveFrame) => void): (() => void) =>
   window.api.on('wave:frame', listener)
 
 export function MainWindow(): React.JSX.Element {
-  const { source, sourceListExpanded, level, items, selectedId, editingId, notice } =
+  const { source, sourceListExpanded, level, items, selectedId, editingId, tagsId, notice } =
     useRecorderStore()
   const { setSource, setSourceListExpanded, setLevel, select, rename, endRename } =
     useRecorderStore()
-  const { importAudioFile, clearList, dismissNotice } = useRecorderStore()
+  const { importAudioFile, clearList, closeTags, dismissNotice } = useRecorderStore()
   const { devices, refresh: refreshDevices } = useDevicesStore()
   const { playingId, paused, positionMs, pause, stop } = usePlayerStore()
   const { session, record, togglePause, stop: stopRecording } = useSessionStore()
@@ -51,6 +52,7 @@ export function MainWindow(): React.JSX.Element {
 
   const selected = items.find((item) => item.id === selectedId) ?? null
   const playing = items.find((item) => item.id === playingId) ?? null
+  const tagged = items.find((item) => item.id === tagsId) ?? null
 
   return (
     <div className={styles.window}>
@@ -113,6 +115,7 @@ export function MainWindow(): React.JSX.Element {
         onOpenAudioFile={() => void importAudioFile()}
         onClearList={() => void clearList()}
       />
+      {tagged && <TagEditor key={tagged.id} item={tagged} onClose={closeTags} />}
     </div>
   )
 }

@@ -12,6 +12,8 @@
 import type {
   AppInfo,
   AudioDevice,
+  AudioFormat,
+  AudioTags,
   HistoryItem,
   MeterFrame,
   Notice,
@@ -66,6 +68,14 @@ export interface IpcInvoke {
   'history:duplicate': { req: { id: string }; res: HistoryItem[] }
   /** Asks for confirmation, then moves the file to the Recycle Bin and out of the list. */
   'history:delete': { req: { id: string }; res: HistoryItem[] }
+  /** Encodes a copy in another format next to the file and adds it to the list. */
+  'history:convert': { req: { id: string; format: AudioFormat }; res: HistoryItem[] }
+  /** Joins every file of the list, oldest first, into a new file and adds it to the list. */
+  'history:merge': { req: { format: AudioFormat }; res: HistoryItem[] }
+  /** Tags of the file, for the Tag Editor; `null` when they cannot be read (reported as a notice). */
+  'history:readTags': { req: { id: string }; res: AudioTags | null }
+  /** Rewrites the tags of the file in place (the audio is copied, not encoded again). */
+  'history:writeTags': { req: { id: string; tags: AudioTags }; res: HistoryItem[] }
   /**
    * Audio file picker (mp3, wav); the chosen file joins the list, or is found in
    * it when it is already there. Resolves with its id, `null` when cancelled.
@@ -148,6 +158,10 @@ export const INVOKE_CHANNELS = [
   'history:duplicate',
   'history:delete',
   'history:import',
+  'history:convert',
+  'history:merge',
+  'history:readTags',
+  'history:writeTags',
   'dialog:selectFolder',
   'shell:openPath',
   'shell:showItemInFolder',

@@ -152,7 +152,7 @@ export interface HistoryItem {
   sizeBytes: number
   /** Epoch milliseconds. */
   createdAt: number
-  /** What was recorded; `null` for a file opened from disk ("Open audio file…"). */
+  /** What was recorded; `null` for a file not recorded here (opened from disk or merged). */
   source: SourceSelection | null
   /** `false` once the file is gone from disk; checked at startup and when the window gets focus. */
   exists: boolean
@@ -161,6 +161,16 @@ export interface HistoryItem {
 /** An item as it is added: whether the file exists is for the history to find out. */
 export type NewHistoryItem = Omit<HistoryItem, 'exists'>
 
+/** Tags of a file shown by the Tag Editor; an empty string is a tag the file does not have. */
+export interface AudioTags {
+  title: string
+  artist: string
+  album: string
+  year: string
+  genre: string
+  comment: string
+}
+
 /**
  * What can be done to a recording of the list: the context menu sends one,
  * and the keyboard shortcuts of the list run the same ones.
@@ -168,6 +178,10 @@ export type NewHistoryItem = Omit<HistoryItem, 'exists'>
 export type RecordingCommand =
   | 'play'
   | 'openExternal'
+  | 'tags'
+  | `convert:${AudioFormat}`
+  | `merge:${AudioFormat}`
+  | 'clearAll'
   | 'rename'
   | 'duplicate'
   | 'openLocation'

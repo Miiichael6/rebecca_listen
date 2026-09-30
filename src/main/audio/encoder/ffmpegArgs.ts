@@ -4,7 +4,7 @@
  */
 
 import type { AudioFormat, WavBitDepth } from '@shared/types'
-import type { OutputOf, OutputSettings, PcmFormat } from './Encoder'
+import type { FormatSettings, OutputOf, OutputSettings, PcmFormat } from './Encoder'
 
 interface FormatSpec<F extends AudioFormat> {
   /** Muxer name: the `.part` extension tells ffmpeg nothing. */
@@ -52,10 +52,30 @@ function inputArgs(input: PcmFormat): string[] {
   ]
 }
 
-function formatArgs<F extends AudioFormat>(output: OutputOf<F>): string[] {
+function specOf<F extends AudioFormat>(output: OutputOf<F>): FormatSpec<F> {
   const spec: FormatSpec<F> | undefined = FORMATS[output.format]
   if (!spec) throw new Error(`Unknown audio format: ${String(output.format)}`)
-  return [...spec.codecArgs(output), '-f', spec.muxer]
+  return spec
+}
+
+function codecArgs<F extends AudioFormat>(output: OutputOf<F>): string[] {
+  return specOf(output).codecArgs(output)
+}
+
+/** Codec and quality of `format` with the Files settings, for a file of the list encoded again. */
+export function fileCodecArgs(format: AudioFormat, settings: FormatSettings): string[] {
+  return format === 'mp3'
+    ? codecArgs({ format, ...settings.mp3 })
+    : codecArgs({ format, ...settings.wav })
+}
+
+/** Container options of a copied or converted file; ID3v2.3 is what the Windows Explorer shows. */
+export function muxerArgs(format: AudioFormat): string[] {
+  return format === 'mp3' ? ['-id3v2_version', '3'] : []
+}
+
+function formatArgs<F extends AudioFormat>(output: OutputOf<F>): string[] {
+  return [...codecArgs(output), '-f', specOf(output).muxer]
 }
 
 export function ffmpegArgs(input: PcmFormat, output: OutputSettings, outPath: string): string[] {

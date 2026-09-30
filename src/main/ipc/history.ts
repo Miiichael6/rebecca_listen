@@ -1,17 +1,19 @@
 /**
  * The list of recordings: rename, duplicate, remove, clear, delete to the
- * Recycle Bin and add a file from disk. Only files of the list are touched:
+ * Recycle Bin, add a file from disk, convert, merge and edit tags. Only files of the list are touched:
  * the renderer names recordings by id, never by path.
  */
 
 import { BrowserWindow, dialog, shell, type IpcMainInvokeEvent } from 'electron'
 import { AUDIO_FORMATS } from '@shared/defaults'
-import type { HistoryItem } from '@shared/types'
+import type { AudioFormat, HistoryItem } from '@shared/types'
 import { ffmpegPath } from '../audio/encoder/ffmpegBinary'
 import { probeDurationMs } from '../audio/encoder/runFfmpeg'
 import { history } from '../history'
+import { convert, mergeAll, readTags, writeTags, type AudioEditTools } from '../history/audioEdits'
 import { describeAudioFile } from '../history/audioFile'
 import { logger } from '../log'
+import { settings } from '../settings'
 import { broadcast, handle } from './typed'
 
 /** Logs a failed action and shows it to the user. */
@@ -24,15 +26,42 @@ function report(action: string, subject: string, error: unknown): void {
 /** Runs a change of the list; a failure becomes a notice and leaves the list as it was. */
 async function attempt(
   action: string,
-  id: string,
-  run: () => HistoryItem[] | Promise<HistoryItem[]>
+  subject: string,
+  run: () => unknown
 ): Promise<HistoryItem[]> {
   try {
-    return await run()
+    await run()
   } catch (error) {
-    report(action, history.get(id)?.path ?? id, error)
-    return history.list()
+    report(action, subject, error)
   }
+  return history.list()
+}
+
+/** What the notices and the log call a file of the list. */
+const pathOf = (id: string): string => history.get(id)?.path ?? id
+
+function inform(message: string): void {
+  broadcast('notice', { level: 'info', message })
+}
+
+function editTools(): AudioEditTools {
+  const { mp3, wav } = settings.get().files
+  return { ffmpeg: ffmpegPath(), formats: { mp3, wav } }
+}
+
+/** Encoding takes a while: the user is told it started and where the file went. */
+async function convertFile(id: string, format: AudioFormat): Promise<void> {
+  inform(`Converting ${history.get(id)?.name ?? ''} to ${format.toUpperCase()}…`)
+  const converted = await convert(editTools(), id, format)
+  logger.info(`converted ${pathOf(id)} to ${converted.path}`)
+  inform(`Saved ${converted.name}`)
+}
+
+async function mergeFiles(format: AudioFormat): Promise<void> {
+  inform(`Merging the list into one ${format.toUpperCase()} file…`)
+  const merged = await mergeAll(editTools(), format, new Date())
+  logger.info(`merged the list into ${merged.path}`)
+  inform(`Saved ${merged.name}`)
 }
 
 interface Confirmation {
@@ -117,12 +146,33 @@ export function registerHistoryIpc(): void {
   handle('history:list', () => history.list())
   history.onChange((items) => broadcast('history:changed', items))
 
-  handle('history:rename', ({ id, name }) => attempt('rename', id, () => history.rename(id, name)))
-  handle('history:duplicate', ({ id }) => attempt('duplicate', id, () => history.duplicate(id)))
+  handle('history:rename', ({ id, name }) =>
+    attempt('rename', pathOf(id), () => history.rename(id, name))
+  )
+  handle('history:duplicate', ({ id }) =>
+    attempt('duplicate', pathOf(id), () => history.duplicate(id))
+  )
   handle('history:remove', ({ id }) => history.remove(id))
   handle('history:clear', (_, event) => clearList(event))
-  handle('history:delete', ({ id }, event) => attempt('delete', id, () => deleteFile(event, id)))
+  handle('history:delete', ({ id }, event) =>
+    attempt('delete', pathOf(id), () => deleteFile(event, id))
+  )
   handle('history:import', (_, event) => importFile(event))
+  handle('history:convert', ({ id, format }) =>
+    attempt('convert', pathOf(id), () => convertFile(id, format))
+  )
+  handle('history:merge', ({ format }) => attempt('merge', 'the list', () => mergeFiles(format)))
+  handle('history:readTags', async ({ id }) => {
+    try {
+      return await readTags(ffmpegPath(), id)
+    } catch (error) {
+      report('read the tags of', pathOf(id), error)
+      return null
+    }
+  })
+  handle('history:writeTags', ({ id, tags }) =>
+    attempt('save the tags of', pathOf(id), () => writeTags(ffmpegPath(), id, tags))
+  )
 
   handle('shell:showItemInFolder', ({ path }) => {
     if (history.has(path)) shell.showItemInFolder(path)

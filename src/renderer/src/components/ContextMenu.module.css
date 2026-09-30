@@ -13,6 +13,11 @@
   animation: open 90ms ease-out;
 }
 
+/* Beside its item; the formats need far less room than the menu. */
+.submenu {
+  min-width: 120px;
+}
+
 @keyframes open {
   from {
     opacity: 0;

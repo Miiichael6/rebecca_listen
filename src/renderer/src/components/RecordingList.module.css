@@ -94,6 +94,28 @@
   text-overflow: ellipsis;
 }
 
+/* Folder button after the name: opens the location of that file. */
+.locate {
+  display: flex;
+  flex: none;
+  padding: 2px;
+  border: none;
+  border-radius: 3px;
+  background: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.locate:hover:not(:disabled) {
+  background: var(--color-control-hover);
+  color: var(--color-primary);
+}
+
+.locate:disabled {
+  color: var(--color-text-disabled);
+  cursor: default;
+}
+
 .body:focus {
   outline: none;
 }

@@ -2,8 +2,9 @@
  * Recording list (spec §4.6, look of plan/images/app.png): a table with File
  * Name, Duration, Date Recorded and Size under a fixed header. The selected row
  * is tinted blue, and the file being recorded shows `--:--` in blue. A file
- * gone from disk is struck through in grey with a warning icon; only Remove
- * and Copy path stay available on it.
+ * gone from disk is struck through in grey with a warning icon; only Remove,
+ * Copy path, Merge all to one and Clear all stay available on it. The folder
+ * button after each name opens its location in the Explorer.
  *
  * Double click plays the file and right click opens its context menu. The
  * keys act on the selected row like the items of that menu: `Enter` plays,
@@ -14,43 +15,91 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ArrowRightLeft,
   ClipboardCopy,
+  Combine,
   Copy,
+  Eraser,
   ExternalLink,
+  FileAudio,
   FileText,
   FileWarning,
   FolderOpen,
   ListX,
   PencilLine,
   Play,
-  Trash2
+  Tags,
+  Trash2,
+  type LucideIcon
 } from 'lucide-react'
-import type { HistoryItem, RecordingCommand, SessionSnapshot } from '@shared/types'
+import { AUDIO_FORMATS } from '@shared/defaults'
+import type { AudioFormat, HistoryItem, RecordingCommand, SessionSnapshot } from '@shared/types'
 import { UNKNOWN_DURATION, formatDuration } from '../lib/duration'
 import { formatDate, formatSize } from '../lib/fileInfo'
-import { canRun } from '../lib/recordingCommandAvailability'
+import { canMerge, canRun } from '../lib/recordingCommandAvailability'
 import { ContextMenu, type ContextMenuItem } from './ContextMenu'
 import styles from './RecordingList.module.css'
 
-type MenuEntry = Omit<ContextMenuItem, 'key'> & { key: RecordingCommand }
+type MenuEntry = Omit<ContextMenuItem, 'key' | 'disabled' | 'children'>
 
-const MENU: readonly MenuEntry[] = [
-  { key: 'play', label: 'Play', icon: Play, shortcut: 'Enter' },
-  { key: 'openExternal', label: 'Open with default app', icon: ExternalLink },
-  { key: 'rename', label: 'Rename', icon: PencilLine, shortcut: 'F2', separated: true },
-  { key: 'duplicate', label: 'Duplicate', icon: Copy, shortcut: 'Ctrl+D' },
-  { key: 'openLocation', label: 'Open file location', icon: FolderOpen, separated: true },
-  { key: 'copyPath', label: 'Copy path', icon: ClipboardCopy },
-  { key: 'remove', label: 'Remove from list', icon: ListX, shortcut: 'Del', separated: true },
-  { key: 'delete', label: 'Delete file', icon: Trash2, shortcut: 'Shift+Del', danger: true }
-]
+/** An item opening one choice per format; greyed out when none can be chosen. */
+function formatSubmenu(
+  key: string,
+  entry: MenuEntry,
+  children: ContextMenuItem[]
+): ContextMenuItem {
+  return { key, ...entry, children, disabled: children.every((child) => child.disabled) }
+}
 
-/** Items of the context menu; each key is the `RecordingCommand` it runs. */
-function menuItems(item: HistoryItem, canPlay: boolean): ContextMenuItem[] {
-  return MENU.map((entry) => ({
+/**
+ * Items of the context menu, in the order of the original app; each key is the
+ * `RecordingCommand` it runs.
+ */
+function menuItems(item: HistoryItem, items: HistoryItem[], canPlay: boolean): ContextMenuItem[] {
+  const command = (key: RecordingCommand, entry: MenuEntry, allowed = true): ContextMenuItem => ({
+    key,
     ...entry,
-    disabled: !canRun(item, entry.key) || (entry.key === 'play' && !canPlay)
-  }))
+    disabled: !allowed || !canRun(item, key)
+  })
+  const formats = (
+    action: 'convert' | 'merge',
+    allowed: (format: AudioFormat) => boolean
+  ): ContextMenuItem[] =>
+    AUDIO_FORMATS.map((format) =>
+      command(
+        `${action}:${format}`,
+        { label: format.toUpperCase(), icon: FileAudio },
+        allowed(format)
+      )
+    )
+  const menuIcon = (label: string, icon: LucideIcon, separated = false): MenuEntry => ({
+    label,
+    icon,
+    separated
+  })
+
+  return [
+    command('play', { label: 'Play', icon: Play, shortcut: 'Enter' }, canPlay),
+    command('openExternal', menuIcon('Open with default app', ExternalLink)),
+    command('rename', { label: 'Rename', icon: PencilLine, shortcut: 'F2', separated: true }),
+    command('tags', menuIcon('Tag Editor…', Tags)),
+    command('duplicate', { label: 'Duplicate', icon: Copy, shortcut: 'Ctrl+D' }),
+    formatSubmenu(
+      'convert',
+      menuIcon('Convert to', ArrowRightLeft, true),
+      formats('convert', (format) => format !== item.format)
+    ),
+    formatSubmenu(
+      'merge',
+      menuIcon('Merge all to one', Combine),
+      formats('merge', () => canMerge(items))
+    ),
+    command('openLocation', menuIcon('Open file location', FolderOpen, true)),
+    command('copyPath', menuIcon('Copy path', ClipboardCopy)),
+    command('remove', { label: 'Remove from list', icon: ListX, shortcut: 'Del', separated: true }),
+    command('delete', { label: 'Delete file', icon: Trash2, shortcut: 'Shift+Del', danger: true }),
+    command('clearAll', { ...menuIcon('Clear all…', Eraser), danger: true })
+  ]
 }
 
 interface MenuState {
@@ -92,18 +141,36 @@ function commandOfKey(event: React.KeyboardEvent): RecordingCommand | null {
   }
 }
 
-function FileName({
-  name,
-  missing = false
-}: {
+interface FileNameProps {
   name: string
   missing?: boolean
-}): React.JSX.Element {
+  /** Adds the folder button; the file being recorded has none. */
+  onOpenLocation?: () => void
+}
+
+function FileName({ name, missing = false, onOpenLocation }: FileNameProps): React.JSX.Element {
   const Icon = missing ? FileWarning : FileText
   return (
     <span className={styles.name}>
       <Icon className={missing ? styles.warning : styles.icon} size={15} aria-hidden />
       <span className={styles.text}>{name}</span>
+      {onOpenLocation && (
+        <button
+          type="button"
+          className={styles.locate}
+          title="Open file location"
+          aria-label="Open file location"
+          tabIndex={-1}
+          disabled={missing}
+          onClick={(event) => {
+            event.stopPropagation()
+            onOpenLocation()
+          }}
+          onDoubleClick={(event) => event.stopPropagation()}
+        >
+          <FolderOpen size={14} aria-hidden />
+        </button>
+      )}
     </span>
   )
 }
@@ -252,7 +319,11 @@ export function RecordingList({
             {item.id === editingId ? (
               <NameEditor name={item.name} onDone={(name) => endEdit(item, name)} />
             ) : (
-              <FileName name={item.name} missing={!item.exists} />
+              <FileName
+                name={item.name}
+                missing={!item.exists}
+                onOpenLocation={() => onCommand?.(item.id, 'openLocation')}
+              />
             )}
             <span>{formatDuration(item.durationMs)}</span>
             <span>{formatDate(item.createdAt)}</span>
@@ -265,7 +336,7 @@ export function RecordingList({
           x={menu.x}
           y={menu.y}
           title={menuItem.name}
-          items={menuItems(menuItem, canPlay)}
+          items={menuItems(menuItem, items, canPlay)}
           onChoose={(key) => onCommand?.(menuItem.id, key as RecordingCommand)}
           onClose={closeMenu}
         />

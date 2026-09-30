@@ -1,4 +1,4 @@
-/** File names of the list: what a rename may ask for and where a copy goes. Pure but for `exists`. */
+/** File names of the list: what a rename may ask for and where a new file goes. Pure but for `exists`. */
 
 import { existsSync } from 'fs'
 import { extname } from 'path'
@@ -26,11 +26,25 @@ export function normalizeFileName(requested: string, current: string): string {
   return base + ext
 }
 
-/** First free `<base> - Copy<ext>`, `<base> - Copy (1)<ext>`... next to `path`. */
-export function copyPath(path: string, exists: (path: string) => boolean = existsSync): string {
+type Exists = (path: string) => boolean
+
+/** `path` if it is free, otherwise the first free `<base> (1)<ext>`, `<base> (2)<ext>`... */
+export function firstFreePath(path: string, exists: Exists = existsSync): string {
   const ext = extname(path)
-  const base = path.slice(0, path.length - ext.length) + COPY_SUFFIX
-  let copy = base + ext
-  for (let n = 1; exists(copy); n += 1) copy = base + NAME_COLLISION_SUFFIX(n) + ext
-  return copy
+  const base = path.slice(0, path.length - ext.length)
+  let free = path
+  for (let n = 1; exists(free); n += 1) free = base + NAME_COLLISION_SUFFIX(n) + ext
+  return free
+}
+
+/** First free `<base> - Copy<ext>`, `<base> - Copy (1)<ext>`... next to `path`. */
+export function copyPath(path: string, exists: Exists = existsSync): string {
+  const ext = extname(path)
+  return firstFreePath(path.slice(0, path.length - ext.length) + COPY_SUFFIX + ext, exists)
+}
+
+/** `path` with the extension of `format`, where Convert to writes. */
+export function withFormat(path: string, format: string): string {
+  const ext = extname(path)
+  return `${path.slice(0, path.length - ext.length)}.${format}`
 }

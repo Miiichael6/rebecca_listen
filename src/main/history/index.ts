@@ -15,7 +15,7 @@ import { DAMAGED_SUFFIX, HistoryFile } from './file'
 import { copyPath, normalizeFileName } from './fileName'
 
 export { HISTORY_FILE_NAME } from './file'
-export { copyPath, normalizeFileName } from './fileName'
+export { copyPath, firstFreePath, normalizeFileName, withFormat } from './fileName'
 
 type Listener = (items: HistoryItem[]) => void
 
@@ -108,6 +108,11 @@ async function rename(id: string, requested: string): Promise<HistoryItem[]> {
   return commit(items.map((other) => (other.id === id ? { ...other, name, path } : other)))
 }
 
+/** Stores what changed in the file of an item (its size after the Tag Editor). */
+function update(id: string, patch: Partial<Pick<HistoryItem, 'sizeBytes'>>): HistoryItem[] {
+  return commit(items.map((item) => (item.id === id ? { ...item, ...patch } : item)))
+}
+
 /** Takes the item out of the list; the file stays on disk. */
 function remove(id: string): HistoryItem[] {
   return commit(items.filter((item) => item.id !== id))
@@ -144,5 +149,6 @@ export const history = {
   remove,
   clear,
   duplicate,
+  update,
   onChange
 }

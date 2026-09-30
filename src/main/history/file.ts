@@ -13,6 +13,10 @@ import type { HistoryItem, NewHistoryItem } from '@shared/types'
 
 export const HISTORY_FILE_NAME = 'history.json'
 const TEMP_SUFFIX = '.tmp'
+/** Windows refuses a rename for a moment while an antivirus or the indexer reads the file. */
+const RENAME_ATTEMPTS = 5
+const RENAME_RETRY_MS = 20
+const BUSY_CODES = ['EPERM', 'EACCES', 'EBUSY']
 export const DAMAGED_SUFFIX = '.damaged'
 
 export interface HistoryFileContents {
@@ -46,7 +50,21 @@ export class HistoryFile {
   write(items: HistoryItem[]): void {
     const temp = this.path + TEMP_SUFFIX
     writeFileSync(temp, JSON.stringify(items.map(toStored), null, 2))
-    renameSync(temp, this.path)
+    renameWithRetry(temp, this.path)
+  }
+}
+
+/** Waits a little longer after each refused try; the write stays synchronous. */
+function renameWithRetry(from: string, to: string): void {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      renameSync(from, to)
+      return
+    } catch (error) {
+      const busy = BUSY_CODES.includes((error as NodeJS.ErrnoException).code ?? '')
+      if (!busy || attempt >= RENAME_ATTEMPTS) throw error
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RENAME_RETRY_MS * attempt)
+    }
   }
 }
 

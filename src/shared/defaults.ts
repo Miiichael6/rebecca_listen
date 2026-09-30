@@ -167,6 +167,14 @@ export const FILE_PROGRESS_MS = 500
 /** Last bytes of ffmpeg's stderr kept for the log when an encoding fails. */
 export const FFMPEG_STDERR_TAIL_BYTES = 4096
 
+/** Merge all to one resamples every file to this, since they may differ. */
+export const MERGE_SAMPLE_RATE = 48000
+export const MERGE_CHANNEL_LAYOUT = 'stereo'
+/** `Merged [YYYY-MM-DD][hh-mm-ss].<ext>`, next to the newest file of the list. */
+export const MERGED_FILE_PREFIX = 'Merged '
+/** Merge all to one needs this many files of the list on disk. */
+export const MERGE_MIN_FILES = 2
+
 /** VU meter thresholds in dBFS: green below the first, yellow below the second. */
 export const VU_GREEN_MAX_DB = -12
 export const VU_YELLOW_MAX_DB = -3

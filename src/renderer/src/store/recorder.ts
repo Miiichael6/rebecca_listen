@@ -19,6 +19,8 @@ interface RecorderStore {
   selectedId: string | null
   /** Row whose name is being edited in place (F2 or Rename). */
   editingId: string | null
+  /** Recording whose tags the Tag Editor shows. */
+  tagsId: string | null
   notice: Notice | null
   setSource: (source: SourceSelection) => Promise<void>
   setSourceListExpanded: (expanded: boolean) => Promise<void>
@@ -28,6 +30,8 @@ interface RecorderStore {
   rename: (id: string, name: string) => Promise<void>
   startRename: (id: string) => void
   endRename: () => void
+  openTags: (id: string) => void
+  closeTags: () => void
   /** File picker in main; the chosen file joins the list (if new) and is selected. */
   importAudioFile: () => Promise<void>
   /** Main asks for confirmation; the files stay on disk. */
@@ -48,6 +52,7 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
   items: [],
   selectedId: null,
   editingId: null,
+  tagsId: null,
   notice: null,
 
   setSource: async (source) => {
@@ -75,6 +80,8 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
 
   startRename: (id) => set({ selectedId: id, editingId: id }),
   endRename: () => set({ editingId: null }),
+  openTags: (id) => set({ selectedId: id, tagsId: id }),
+  closeTags: () => set({ tagsId: null }),
 
   importAudioFile: async () => {
     const id = await window.api.invoke('history:import')
