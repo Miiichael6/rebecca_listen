@@ -5,12 +5,10 @@
  * exactly as it was.
  */
 
-import { spawn } from 'child_process'
 import { existsSync } from 'fs'
 import { rename, rm, stat } from 'fs/promises'
 import { basename, dirname, extname } from 'path'
-import { FFMPEG_STDERR_TAIL_BYTES } from '@shared/defaults'
-import { parseDurationMs } from '../audio/encoder/ffmpegDuration'
+import { probeDurationMs, runFfmpeg } from '../audio/encoder/runFfmpeg'
 import { freePath } from './naming'
 import { remuxArgs, type UnfinishedRecording } from './partFiles'
 
@@ -38,7 +36,7 @@ export async function repairPart(
   let durationMs: number | null
   try {
     await runFfmpeg(binary, remuxArgs(format, partPath, temp))
-    durationMs = parseDurationMs(await runFfmpeg(binary, ['-hide_banner', '-i', temp], true))
+    durationMs = await probeDurationMs(binary, temp)
     if (!durationMs) throw new Error('no audio could be read from it')
     await rename(temp, path)
   } catch (error) {
@@ -52,24 +50,4 @@ export async function repairPart(
 
 function baseName(path: string): string {
   return basename(path, extname(path))
-}
-
-/**
- * Runs ffmpeg and resolves with its stderr. `ffmpeg -i <file>` alone always
- * exits with an error (no output given), so `probe` ignores the exit code.
- */
-function runFfmpeg(binary: string, args: string[], probe = false): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const child = spawn(binary, args, { windowsHide: true })
-    let stderr = ''
-    child.stderr.setEncoding('utf8')
-    child.stderr.on('data', (chunk: string) => {
-      stderr = (stderr + chunk).slice(-FFMPEG_STDERR_TAIL_BYTES)
-    })
-    child.once('error', reject)
-    child.once('close', (code) => {
-      if (probe || code === 0) resolve(stderr)
-      else reject(new Error(`ffmpeg exited with code ${code}: ${stderr.trim()}`))
-    })
-  })
 }

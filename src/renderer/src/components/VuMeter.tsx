@@ -1,6 +1,6 @@
 /**
- * Stereo VU meter (spec §4.2): two rows of `VU_SEGMENTS` segments, green up to
- * -12 dBFS, yellow up to -3 dBFS and red above, plus a peak that holds for
+ * Stereo VU meter (spec §4.2): two gradient bars, green up to -12 dBFS, yellow
+ * up to -3 dBFS and red above, plus a peak that holds for
  * `VU_PEAK_HOLD_MS` and then falls slowly. A mono source shows both rows alike.
  *
  * Frames are kept in refs and drawn on a canvas each animation frame, so the

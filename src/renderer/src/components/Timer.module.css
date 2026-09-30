@@ -1,12 +1,13 @@
 .timer {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
   height: var(--height-timer);
   font-family: var(--font-mono);
   font-size: var(--font-size-timer);
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   font-variant-numeric: tabular-nums;
+  color: var(--color-text);
 }
 
 /* Soft blink while paused (§4.4). */

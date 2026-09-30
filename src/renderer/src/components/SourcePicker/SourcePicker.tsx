@@ -7,7 +7,7 @@
  * neither closes it nor loses the active row.
  */
 
-import { AlertTriangle, ChevronDown } from 'lucide-react'
+import { AlertTriangle, ChevronDown, FileAudio } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { AudioDevice, SourceSelection } from '@shared/types'
 import { SourceMenu } from './SourceMenu'
@@ -149,7 +149,11 @@ export function SourcePicker({
           onClick={() => (isOpen ? setOpen(false) : openMenu())}
           onKeyDown={onKeyDown}
         >
-          {label.missing && <AlertTriangle className={styles.warning} size={13} aria-hidden />}
+          {label.missing ? (
+            <AlertTriangle className={styles.warning} size={16} aria-hidden />
+          ) : (
+            <FileAudio className={styles.icon} size={16} aria-hidden />
+          )}
           <span className={styles.value}>{label.text}</span>
           <ChevronDown className={styles.chevron} size={14} aria-hidden />
         </button>

@@ -152,8 +152,28 @@ export interface HistoryItem {
   sizeBytes: number
   /** Epoch milliseconds. */
   createdAt: number
-  source: SourceSelection
+  /** What was recorded; `null` for a file opened from disk ("Open audio file…"). */
+  source: SourceSelection | null
+  /** `false` once the file is gone from disk; checked at startup and when the window gets focus. */
+  exists: boolean
 }
+
+/** An item as it is added: whether the file exists is for the history to find out. */
+export type NewHistoryItem = Omit<HistoryItem, 'exists'>
+
+/**
+ * What can be done to a recording of the list: the context menu sends one,
+ * and the keyboard shortcuts of the list run the same ones.
+ */
+export type RecordingCommand =
+  | 'play'
+  | 'openExternal'
+  | 'rename'
+  | 'duplicate'
+  | 'openLocation'
+  | 'copyPath'
+  | 'remove'
+  | 'delete'
 
 // ---------------------------------------------------------------------------
 // Misc

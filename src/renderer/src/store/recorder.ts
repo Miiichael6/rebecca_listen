@@ -17,11 +17,21 @@ interface RecorderStore {
   level: number
   items: HistoryItem[]
   selectedId: string | null
+  /** Row whose name is being edited in place (F2 or Rename). */
+  editingId: string | null
   notice: Notice | null
   setSource: (source: SourceSelection) => Promise<void>
   setSourceListExpanded: (expanded: boolean) => Promise<void>
   setLevel: (percent: number) => void
   select: (id: string) => void
+  /** Renames the file on disk; main reports a refused name as a notice. */
+  rename: (id: string, name: string) => Promise<void>
+  startRename: (id: string) => void
+  endRename: () => void
+  /** File picker in main; the chosen file joins the list (if new) and is selected. */
+  importAudioFile: () => Promise<void>
+  /** Main asks for confirmation; the files stay on disk. */
+  clearList: () => Promise<void>
   dismissNotice: () => void
 }
 
@@ -37,6 +47,7 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
   level: DEFAULT_LEVEL_PERCENT,
   items: [],
   selectedId: null,
+  editingId: null,
   notice: null,
 
   setSource: async (source) => {
@@ -57,6 +68,24 @@ export const useRecorderStore = create<RecorderStore>((set) => ({
 
   select: (id) => set({ selectedId: id }),
 
+  rename: async (id, name) => {
+    const items = await window.api.invoke('history:rename', { id, name })
+    set({ items })
+  },
+
+  startRename: (id) => set({ selectedId: id, editingId: id }),
+  endRename: () => set({ editingId: null }),
+
+  importAudioFile: async () => {
+    const id = await window.api.invoke('history:import')
+    if (id) set({ selectedId: id })
+  },
+
+  clearList: async () => {
+    const items = await window.api.invoke('history:clear')
+    set({ items })
+  },
+
   dismissNotice: () => set({ notice: null })
 }))
 
@@ -66,10 +95,14 @@ let subscribed = false
 export async function loadRecorder(): Promise<void> {
   if (!subscribed) {
     subscribed = true
-    window.api.on('history:changed', (items) =>
-      // The newest recording is selected, so ▶ plays what was just recorded.
-      useRecorderStore.setState({ items, selectedId: items[0]?.id ?? null })
-    )
+    window.api.on('history:changed', (items) => {
+      // A new recording is selected, so ▶ plays what was just recorded; any
+      // other change (a rename) keeps the selection.
+      const { items: previous, selectedId } = useRecorderStore.getState()
+      const added = items[0] && items[0].id !== previous[0]?.id
+      const kept = !added && items.some((item) => item.id === selectedId)
+      useRecorderStore.setState({ items, selectedId: kept ? selectedId : (items[0]?.id ?? null) })
+    })
     window.api.on('notice', (notice) => useRecorderStore.setState({ notice }))
   }
   const [source, ui, level, items] = await Promise.all([

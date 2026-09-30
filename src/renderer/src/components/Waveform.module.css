@@ -1,10 +1,7 @@
+/* Fills the monitor under the timer; the state badges float over its bottom. */
 .strip {
   position: relative;
-  height: var(--height-waveform);
-  margin-top: var(--gap-y);
-  border-top: 1px solid var(--color-border);
-  border-bottom: 1px solid var(--color-border);
-  background: var(--color-background);
+  height: 112px;
 }
 
 .canvas {

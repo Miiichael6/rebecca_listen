@@ -1,20 +1,22 @@
 /**
- * Transport bar (spec §4.8): round record button, the File / Stop / Play /
- * Pause pill, the Split button (in place of the original "Upgrade") and the
- * gear that opens Options.
+ * Transport bar (spec §4.8, look of plan/images/app.png): red record button,
+ * round Folder / Stop / Play / Pause buttons, the Split pill (in place of the
+ * original "Upgrade") and the round gear that opens Options.
  *
  * ▶ ⏸ ■ play the selected recording inside the app; while a recording is in
- * progress ■ stops it and ⏸ pauses or resumes it. The round button starts a
+ * progress ■ stops it and ⏸ pauses or resumes it. The folder button opens the
+ * recordings folder, and its menu (right click) opens a file or clears the list. The round button starts a
  * recording and, once started, stops it: a square that pulses while
  * recording and holds still while paused.
  */
 
-import { Circle, Eject, Pause, Play, Settings, Square } from 'lucide-react'
+import { Pause, Play, Scissors, Settings, Square } from 'lucide-react'
 import type { SessionState } from '@shared/types'
+import { FileButton } from './FileButton'
 import styles from './TransportBar.module.css'
 
-/** Icon size of the pill buttons. */
-const ICON = 14
+/** Icon size of the round buttons. */
+const ICON = 18
 
 const PAUSE_TITLES: Record<SessionState, string> = {
   idle: 'Pause',
@@ -25,8 +27,12 @@ const PAUSE_TITLES: Record<SessionState, string> = {
 interface TransportBarProps {
   /** Anything but `idle` turns the round button into Stop and enables Split. */
   state?: SessionState
+  /** Clear list… is greyed out on an empty list. */
+  hasItems?: boolean
   onRecord?: () => void
-  onFile?: () => void
+  onOpenFolder?: () => void
+  onOpenAudioFile?: () => void
+  onClearList?: () => void
   onStop?: () => void
   onPlay?: () => void
   onPause?: () => void
@@ -36,8 +42,11 @@ interface TransportBarProps {
 
 export function TransportBar({
   state = 'idle',
+  hasItems = false,
   onRecord,
-  onFile,
+  onOpenFolder,
+  onOpenAudioFile,
+  onClearList,
   onStop,
   onPlay,
   onPause,
@@ -57,37 +66,31 @@ export function TransportBar({
         title={recording ? 'Stop recording' : 'Record'}
         onClick={recording ? onStop : onRecord}
       >
-        {recording ? (
-          <Square size={14} fill="currentColor" aria-hidden />
-        ) : (
-          <Circle size={18} fill="currentColor" aria-hidden />
-        )}
+        <span className={styles.recordMark} aria-hidden />
       </button>
 
-      <div className={styles.pill}>
-        <button type="button" className={styles.pillButton} title="Open folder" onClick={onFile}>
-          <Eject size={ICON} aria-hidden />
-        </button>
-        <button type="button" className={styles.pillButton} title="Stop" onClick={onStop}>
-          <Square size={ICON} fill="currentColor" aria-hidden />
-        </button>
-        <button
-          type="button"
-          className={styles.pillButton}
-          title="Play the selected recording"
-          onClick={onPlay}
-        >
-          <Play size={ICON} fill="currentColor" aria-hidden />
-        </button>
-        <button
-          type="button"
-          className={styles.pillButton}
-          title={PAUSE_TITLES[state]}
-          onClick={onPause}
-        >
-          <Pause size={ICON} fill="currentColor" aria-hidden />
-        </button>
-      </div>
+      <FileButton
+        className={styles.round}
+        iconSize={ICON}
+        hasItems={hasItems}
+        onOpenFolder={onOpenFolder}
+        onOpenAudioFile={onOpenAudioFile}
+        onClearList={onClearList}
+      />
+      <button type="button" className={styles.round} title="Stop" onClick={onStop}>
+        <Square size={ICON - 2} fill="currentColor" aria-hidden />
+      </button>
+      <button
+        type="button"
+        className={styles.round}
+        title="Play the selected recording"
+        onClick={onPlay}
+      >
+        <Play size={ICON} fill="currentColor" aria-hidden />
+      </button>
+      <button type="button" className={styles.round} title={PAUSE_TITLES[state]} onClick={onPause}>
+        <Pause size={ICON} fill="currentColor" aria-hidden />
+      </button>
 
       <span className={styles.spacer} />
 
@@ -98,11 +101,12 @@ export function TransportBar({
         disabled={!recording}
         onClick={onSplit}
       >
+        <Scissors size={ICON} aria-hidden />
         Split
       </button>
 
-      <button type="button" className={styles.gear} title="Options" onClick={onOptions}>
-        <Settings size={16} aria-hidden />
+      <button type="button" className={styles.round} title="Options" onClick={onOptions}>
+        <Settings size={ICON + 2} aria-hidden />
       </button>
     </div>
   )

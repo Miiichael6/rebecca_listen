@@ -1,18 +1,39 @@
 .window {
   display: flex;
   flex-direction: column;
+  gap: var(--gap-y);
   height: 100%;
-  padding-bottom: var(--gap-y);
+  padding: var(--gap-y) var(--gap-y) 0;
+}
+
+/* Rounded group of controls (plan/images/app.png). */
+.panel {
+  flex: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+}
+
+.sourcePanel {
+  padding: 4px 0 8px;
+}
+
+/* Timer, waveform and state badges share one dark, gridded box. */
+.monitor {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-monitor);
 }
 
 /* One-off message from main (device lost, cannot save...). Click to dismiss. */
 .notice {
-  margin: var(--gap-y) var(--gap-x) 0;
-  padding: 4px 8px;
+  flex: none;
+  padding: 6px 10px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-control);
-  background: var(--color-surface-sunken);
+  background: var(--color-panel);
   text-align: left;
+  cursor: pointer;
 }
 
 .info {

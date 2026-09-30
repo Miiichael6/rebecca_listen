@@ -11,7 +11,7 @@
 import { randomUUID } from 'crypto'
 import { basename } from 'path'
 import { SESSION_TICK_MS } from '@shared/defaults'
-import type { HistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
+import type { NewHistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
 import type { OpenRecording } from '../files/partFiles'
 import type { CaptureSource, CaptureTap } from './capture'
 import { describePlan, skipsSilence } from './devices'
@@ -37,7 +37,7 @@ export interface SessionDeps {
   createEncoder: () => Encoder
   /** Where the next file goes and how it is encoded, read from the settings when it opens. */
   nextFile: () => { path: string; output: OutputSettings }
-  addToHistory: (item: HistoryItem) => void
+  addToHistory: (item: NewHistoryItem) => void
   /** Remembers the files being written, for the recovery after a crash (task 14). */
   journal: { add: (recording: OpenRecording) => void; remove: (path: string) => void }
   emit: SessionEmit

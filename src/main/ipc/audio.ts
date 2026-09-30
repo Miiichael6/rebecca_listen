@@ -1,5 +1,6 @@
-/** Devices, source, level, monitoring, recording session, the list of recordings and opening them. */
+/** Devices, source, level, monitoring, recording session and opening recordings. */
 
+import { spawn } from 'child_process'
 import { mkdirSync } from 'fs'
 import { shell } from 'electron'
 import { recordingsFolder } from '../files/naming'
@@ -18,6 +19,25 @@ async function open(path: string): Promise<void> {
     logger.warn(`could not open ${path}: ${error}`)
     broadcast('notice', { level: 'error', message: `Could not open ${path}: ${error}` })
   }
+}
+
+/**
+ * Opens a folder in the Explorer. `shell.openPath` goes through the default
+ * verb of folders, which some context-menu tools break (a `none` verb gives
+ * "application not found"); calling `explorer.exe` does not depend on it.
+ */
+function openFolder(folder: string): void {
+  if (process.platform !== 'win32') {
+    void open(folder)
+    return
+  }
+  // The Explorer exits with 1 even when it opened the folder: only a failure to start counts.
+  const explorer = spawn('explorer.exe', [folder], { detached: true, stdio: 'ignore' })
+  explorer.on('error', (error) => {
+    logger.warn(`could not open ${folder}: ${error.message}`)
+    broadcast('notice', { level: 'error', message: `Could not open ${folder}: ${error.message}` })
+  })
+  explorer.unref()
 }
 
 export function registerAudioIpc(): void {
@@ -53,9 +73,6 @@ export function registerAudioIpc(): void {
   // Split comes with task 27: until then it changes nothing.
   handle('session:split', () => session.snapshot())
 
-  handle('history:list', () => history.list())
-  history.onChange((items) => broadcast('history:changed', items))
-
   // Only files this app recorded: the renderer cannot open arbitrary paths.
   handle('shell:openPath', async ({ path }) => {
     if (history.has(path)) await open(path)
@@ -63,6 +80,6 @@ export function registerAudioIpc(): void {
   handle('shell:openRecordingsFolder', async () => {
     const folder = recordingsFolder(settings.get().files.folder)
     mkdirSync(folder, { recursive: true })
-    await open(folder)
+    openFolder(folder)
   })
 }

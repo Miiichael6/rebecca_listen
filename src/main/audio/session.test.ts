@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AudioDevice, HistoryItem, Notice } from '@shared/types'
+import type { AudioDevice, NewHistoryItem, Notice } from '@shared/types'
 import type { OpenRecording } from '../files/partFiles'
 import type { CaptureTap } from './capture'
 import type { InputPlan } from './devices'
@@ -70,7 +70,7 @@ class FakeEncoder implements Encoder {
 interface Harness {
   session: RecordingSession
   encoder: FakeEncoder
-  history: HistoryItem[]
+  history: NewHistoryItem[]
   notices: Notice[]
   journal: Map<string, OpenRecording>
   released: ReturnType<typeof vi.fn>
@@ -88,7 +88,7 @@ function setup(kind: AudioDevice['kind'] | 'mixed' = 'capture', openError?: Erro
   let lost: (reason: string) => void = () => {}
   const released = vi.fn()
   const encoder = new FakeEncoder()
-  const history: HistoryItem[] = []
+  const history: NewHistoryItem[] = []
   const notices: Notice[] = []
   const journal = new Map<string, OpenRecording>()
 

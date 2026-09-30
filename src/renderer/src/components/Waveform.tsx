@@ -18,9 +18,9 @@ const FRAME_MS = 1000 / METER_FPS
 const FRAME_PX = WAVE_COLUMNS_PER_FRAME * COLUMN_PX
 
 const COLOR_VARS = {
-  background: '--color-background',
+  background: '--color-monitor',
   grid: '--color-grid',
-  wave: '--color-primary'
+  wave: '--color-wave'
 }
 
 interface WaveformProps {

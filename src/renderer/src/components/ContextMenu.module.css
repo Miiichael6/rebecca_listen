@@ -1,0 +1,120 @@
+.menu {
+  position: fixed;
+  z-index: 100;
+  min-width: 220px;
+  max-width: 300px;
+  padding: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-panel);
+  background: var(--color-control-background);
+  box-shadow: 0 10px 28px rgb(0 0 0 / 50%);
+  outline: none;
+  user-select: none;
+  animation: open 90ms ease-out;
+}
+
+@keyframes open {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.title {
+  overflow: hidden;
+  padding: 5px 8px 7px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--height-control);
+  padding: 0 8px;
+  border-radius: 4px;
+  color: var(--color-text);
+  cursor: default;
+}
+
+/* The line sits in the gap above the item, so hovering never covers it. */
+.separated {
+  margin-top: 9px;
+}
+
+.separated::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 4px;
+  right: 4px;
+  border-top: 1px solid var(--color-border);
+}
+
+.active {
+  background: var(--color-control-hover);
+}
+
+/* Accent bar of the selected row of the list, repeated on the active item. */
+.active::after {
+  content: '';
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--color-primary);
+}
+
+.icon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.active .icon {
+  color: var(--color-primary);
+}
+
+.label {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.shortcut {
+  flex: none;
+  color: var(--color-text-muted);
+  font-family: inherit;
+  font-size: var(--font-size-small);
+}
+
+.danger,
+.danger .icon {
+  color: var(--color-record);
+}
+
+.danger.active {
+  background: rgb(229 67 63 / 16%);
+}
+
+.danger.active::after {
+  background: var(--color-record);
+}
+
+.danger.active .icon {
+  color: var(--color-record);
+}
+
+.item[aria-disabled='true'],
+.item[aria-disabled='true'] .icon,
+.item[aria-disabled='true'] .shortcut {
+  color: var(--color-text-disabled);
+}

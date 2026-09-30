@@ -1,30 +1,75 @@
-.list {
+.table {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-panel);
+  background: var(--color-panel);
+  overflow: hidden;
+}
+
+.body {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* The zebra keeps going past the last row, like the original. */
-  background: repeating-linear-gradient(
-    to bottom,
-    var(--color-row-odd) 0 var(--height-row),
-    var(--color-row-even) var(--height-row) calc(var(--height-row) * 2)
-  );
 }
 
 .row {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px 110px 56px;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--gap-x);
   height: var(--height-row);
-  padding: 0 6px 0 4px;
-  border-left: 3px solid transparent;
+  padding: 0 4px 0 8px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-/* The stripes come from the container, so a row only paints when selected. */
-.selected {
-  border-left-color: var(--color-primary);
+.row > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 6px;
+}
+
+.body .row:nth-child(even) {
+  background: var(--color-row-even);
+}
+
+.body .row:hover {
+  background: var(--color-control-hover);
+}
+
+.header {
+  flex: none;
+  height: 32px;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.header > span + span {
+  border-left: 1px solid var(--color-border);
+}
+
+.body .selected,
+.body .selected:hover {
   background: var(--color-row-selected);
   color: var(--color-primary);
+}
+
+/* A file gone from disk (§4.6): struck through in grey, even when selected. */
+.body .missing,
+.body .missing.selected {
+  color: var(--color-text-disabled);
+}
+
+.missing .text,
+.missing > span:not(.name) {
+  text-decoration: line-through;
+}
+
+.warning {
+  flex: none;
+  color: var(--color-paused);
 }
 
 /* The file still being written (§4.6). */
@@ -32,13 +77,45 @@
   color: var(--color-primary);
 }
 
-.name {
+.row > .name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 0;
+}
+
+.icon {
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.text {
   overflow: hidden;
-  white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-.duration {
-  flex: none;
-  font-variant-numeric: tabular-nums;
+.body:focus {
+  outline: none;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  height: calc(var(--height-row) - 6px);
+  padding: 0 4px;
+  border: 1px solid var(--color-primary);
+  border-radius: 3px;
+  background: var(--color-panel);
+  color: var(--color-text);
+  font: inherit;
+  outline: none;
+}
+
+.body::-webkit-scrollbar {
+  width: 8px;
+}
+
+.body::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background: var(--color-border-strong);
 }

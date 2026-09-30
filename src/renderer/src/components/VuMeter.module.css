@@ -1,28 +1,28 @@
 .meter {
   display: flex;
-  gap: 4px;
+  gap: var(--gap-x);
   padding: 6px var(--gap-x) 0;
 }
 
+/* Each label sits on its row: row height plus the gap (`ROW_GAP_PX` in lib/vuPainter). */
 .channels {
   flex: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-end;
+  gap: 6px;
   width: var(--width-label);
 }
 
 .channel {
   height: var(--height-vu-row);
-  text-align: right;
   font-size: var(--font-size-small);
   line-height: var(--height-vu-row);
   color: var(--color-text-muted);
 }
 
-/* Both rows plus the 2px gap between them (`ROW_GAP_PX` in lib/vuPainter). */
 .canvas {
   flex: 1;
   min-width: 0;
-  height: calc(var(--height-vu-row) * 2 + 2px);
+  height: calc(var(--height-vu-row) * 2 + 6px);
 }

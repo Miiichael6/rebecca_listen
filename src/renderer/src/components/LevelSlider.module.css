@@ -8,13 +8,12 @@
 .label {
   flex: none;
   width: var(--width-label);
-  text-align: right;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .slider {
   flex: 1;
-  height: 18px;
+  height: 20px;
   margin: 0;
   appearance: none;
   background: transparent;
@@ -23,7 +22,7 @@
 .slider::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
-  /* Blue up to the thumb, dark track after it (screenshot 12). */
+  /* Cyan up to the thumb, grey track after it (plan/images/app.png). */
   background: linear-gradient(
     to right,
     var(--color-primary) 0 var(--filled),
@@ -33,12 +32,13 @@
 
 .slider::-webkit-slider-thumb {
   appearance: none;
-  width: 14px;
-  height: 14px;
-  margin-top: -5px;
-  border: 2px solid var(--color-primary);
+  width: 16px;
+  height: 16px;
+  margin-top: -6px;
+  border: 3px solid var(--color-panel);
   border-radius: 50%;
-  background: var(--color-background);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-border-strong);
 }
 
 .slider:disabled::-webkit-slider-runnable-track {
@@ -46,5 +46,5 @@
 }
 
 .slider:disabled::-webkit-slider-thumb {
-  border-color: var(--color-border-strong);
+  background: var(--color-text-disabled);
 }

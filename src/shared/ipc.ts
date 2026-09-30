@@ -60,16 +60,24 @@ export interface IpcInvoke {
   'history:remove': { req: { id: string }; res: HistoryItem[] }
   /** Renames the file on disk and in the list. */
   'history:rename': { req: { id: string; name: string }; res: HistoryItem[] }
+  /** Asks for confirmation, then empties the list; the files stay on disk. */
   'history:clear': { req: void; res: HistoryItem[] }
+  /** Copies the file next to it (`<name> - Copy`) and adds it to the list. */
+  'history:duplicate': { req: { id: string }; res: HistoryItem[] }
+  /** Asks for confirmation, then moves the file to the Recycle Bin and out of the list. */
+  'history:delete': { req: { id: string }; res: HistoryItem[] }
+  /**
+   * Audio file picker (mp3, wav); the chosen file joins the list, or is found in
+   * it when it is already there. Resolves with its id, `null` when cancelled.
+   */
+  'history:import': { req: void; res: string | null }
 
   /** Folder picker; `null` when the user cancels. */
   'dialog:selectFolder': { req: { current?: string }; res: string | null }
-  /** Audio file picker (mp3, wav); `null` when the user cancels. */
-  'dialog:openAudioFile': { req: void; res: string | null }
 
   /** Opens a file or folder with the system default app. */
   'shell:openPath': { req: { path: string }; res: void }
-  /** Opens the Explorer with the file selected. */
+  /** Opens the Explorer with the file selected (only files of the list). */
   'shell:showItemInFolder': { req: { path: string }; res: void }
   /** Opens the recordings folder, creating it if it does not exist yet. */
   'shell:openRecordingsFolder': { req: void; res: void }
@@ -137,8 +145,10 @@ export const INVOKE_CHANNELS = [
   'history:remove',
   'history:rename',
   'history:clear',
+  'history:duplicate',
+  'history:delete',
+  'history:import',
   'dialog:selectFolder',
-  'dialog:openAudioFile',
   'shell:openPath',
   'shell:showItemInFolder',
   'shell:openRecordingsFolder',

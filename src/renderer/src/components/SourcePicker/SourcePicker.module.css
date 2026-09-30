@@ -8,8 +8,7 @@
 .label {
   flex: none;
   width: var(--width-label);
-  text-align: right;
-  color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .comboWrap {
@@ -23,18 +22,22 @@
 .combo {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
   height: var(--height-control);
-  padding: 0 6px 0 8px;
+  padding: 0 10px;
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-control);
   background: var(--color-control-background);
-  color: var(--color-primary);
+  color: var(--color-text);
   font: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+.combo:not(.disabled):hover {
+  background: var(--color-control-hover);
 }
 
 .combo:focus-visible {
@@ -60,13 +63,18 @@
   text-overflow: ellipsis;
 }
 
-.warning {
+.warning,
+.icon {
   flex: none;
+}
+
+.icon {
+  color: var(--color-text-muted);
 }
 
 .chevron {
   flex: none;
-  color: var(--color-primary);
+  color: var(--color-text-muted);
 }
 
 .combo.disabled .chevron {
@@ -77,14 +85,15 @@
 
 .menu {
   position: absolute;
-  top: calc(100% + 1px);
+  top: calc(100% + 4px);
   left: 0;
   right: 0;
   z-index: 10;
   overflow-y: auto;
   border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
   background: var(--color-control-background);
-  box-shadow: 0 4px 12px rgb(0 0 0 / 18%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
 }
 
 .option {
@@ -143,8 +152,9 @@
   width: 220px;
   padding: 6px 8px;
   border: 1px solid var(--color-border-strong);
-  background: var(--color-background);
-  box-shadow: 0 2px 8px rgb(0 0 0 / 15%);
+  border-radius: 4px;
+  background: var(--color-panel);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 40%);
   color: var(--color-text);
   font-size: var(--font-size-small);
   white-space: normal;
@@ -177,7 +187,7 @@
 
 .groupHeader {
   padding: 5px 8px;
-  background: var(--color-grid);
+  background: var(--color-panel);
   color: var(--color-text);
   font-size: var(--font-size-small);
   font-weight: 600;
