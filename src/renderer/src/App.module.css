@@ -1,0 +1,11 @@
+/* Title bar on top; the main window takes the rest of the height. */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.content {
+  flex: 1;
+  min-height: 0;
+}

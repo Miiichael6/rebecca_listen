@@ -87,6 +87,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 36 | [Pruebas de aceptación y rendimiento](pending/36_pruebas_de_aceptacion.md) | 12 Empaquetado | 35 | ⬜ Pendiente |
 | 37 | [Menú de archivo ampliado y botón de carpeta](done/37_menu_archivo_ampliado.md) | 6 Lista | 17 | ✅ Terminada |
 | 38 | [Elegir la carpeta de las grabaciones](done/38_elegir_carpeta_de_grabaciones.md) | 6 Lista | 12, 17 | ✅ Terminada (prueba en vivo pendiente del usuario) |
+| 39 | [Barra de título con los colores de la app](done/39_barra_de_titulo_integrada.md) | 1 Base | 04 | ✅ Terminada (prueba en vivo pendiente del usuario) |
 
 \* **No dependen del sidecar**: 11 y 12 se adelantan a su fase porque solo necesitan 02 y 03. Con D1 ya resuelta (2026-09-29) el orden natural vuelve a ser el numérico.
 

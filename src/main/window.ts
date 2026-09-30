@@ -6,7 +6,7 @@
 import { is } from '@electron-toolkit/utils'
 import { BrowserWindow, nativeTheme, screen, shell, type Rectangle } from 'electron'
 import { join } from 'path'
-import { APP_NAME, MAIN_WINDOW_SIZE } from '@shared/appInfo'
+import { APP_NAME, MAIN_WINDOW_SIZE, TITLE_BAR_HEIGHT, WINDOW_COLORS } from '@shared/appInfo'
 import type { WindowBounds } from '@shared/settingsSchema'
 import { settings } from './settings'
 import icon from '../../resources/icon.png?asset'
@@ -37,11 +37,8 @@ function rememberBounds(window: BrowserWindow): void {
   settings.setWindowBounds(window.getNormalBounds())
 }
 
-/** Window background before the page paints; matches `--color-background` in theme.css. */
-const BACKGROUND_COLOR = '#16191d'
-
 export function createMainWindow(): BrowserWindow {
-  // The UI is dark only, so the native title bar follows it.
+  // The UI is dark only, so native parts (dialogs, scroll bars) follow it.
   nativeTheme.themeSource = 'dark'
   const window = new BrowserWindow({
     ...MAIN_WINDOW_SIZE,
@@ -49,7 +46,14 @@ export function createMainWindow(): BrowserWindow {
     title: APP_NAME,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: BACKGROUND_COLOR,
+    backgroundColor: WINDOW_COLORS.background,
+    // The page draws the title bar; Windows keeps its buttons, in the app colors.
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: WINDOW_COLORS.background,
+      symbolColor: WINDOW_COLORS.symbols,
+      height: TITLE_BAR_HEIGHT
+    },
     icon,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
