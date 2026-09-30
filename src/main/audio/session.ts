@@ -12,6 +12,7 @@ import { randomUUID } from 'crypto'
 import { basename } from 'path'
 import { SESSION_TICK_MS } from '@shared/defaults'
 import type { HistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
+import type { OpenRecording } from '../files/partFiles'
 import type { CaptureSource, CaptureTap } from './capture'
 import type { Encoder, OutputSettings } from './encoder/Encoder'
 import { pauseToggle, transition, type SessionEffect, type SessionEvent } from './sessionMachine'
@@ -36,6 +37,8 @@ export interface SessionDeps {
   /** Where the next file goes and how it is encoded, read from the settings when it opens. */
   nextFile: () => { path: string; output: OutputSettings }
   addToHistory: (item: HistoryItem) => void
+  /** Remembers the files being written, for the recovery after a crash (task 14). */
+  journal: { add: (recording: OpenRecording) => void; remove: (path: string) => void }
   emit: SessionEmit
   log: { info: (message: string) => void; warn: (message: string) => void }
   now?: () => number
@@ -154,6 +157,7 @@ export class RecordingSession {
       stopTicker: startTicker(SESSION_TICK_MS, () => this.deps.emit.state(this.snapshot()))
     }
     this.file = file
+    this.deps.journal.add({ path, createdAt: now, source: tap.source })
 
     tap.onData((samples) => this.write(file, samples))
     tap.onLost((reason) => {
@@ -228,6 +232,7 @@ export class RecordingSession {
     this.detach()
     try {
       const final = await file.encoder.close()
+      this.deps.journal.remove(file.path)
       this.deps.addToHistory({
         id: randomUUID(),
         path: final.path,

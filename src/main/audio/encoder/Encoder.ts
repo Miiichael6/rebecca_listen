@@ -6,6 +6,9 @@
 
 import type { AudioFormat, Mp3Settings, WavSettings } from '@shared/types'
 
+/** What an unfinished file is called until `close` renames it (see task 14 for the recovery). */
+export const PART_SUFFIX = '.part'
+
 /** Interleaved f32 samples as they come from the pipeline. */
 export interface PcmFormat {
   sampleRate: number

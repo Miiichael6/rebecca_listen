@@ -7,6 +7,7 @@
 import { settings } from '../settings'
 import { history } from '../history'
 import { logger } from '../log'
+import { recordingJournal } from '../files/appRecovery'
 import { resolveOutputPath } from '../files/naming'
 import { FfmpegEncoder } from './encoder/FfmpegEncoder'
 import { ffmpegPath } from './encoder/ffmpegBinary'
@@ -29,6 +30,7 @@ export function initSession(emit: SessionEmit): RecordingSession {
       new FfmpegEncoder({ binary: ffmpegPath(), warn: (message) => logger.warn(message) }),
     nextFile,
     addToHistory: (item) => history.add(item),
+    journal: recordingJournal,
     emit,
     log: { info: (message) => logger.info(message), warn: (message) => logger.warn(message) }
   })

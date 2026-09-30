@@ -7,8 +7,10 @@ import { watchDevicesWhileVisible } from './audio/deviceWatch'
 import { disposeMonitor, monitorWhileVisible } from './audio/monitor'
 import { isRecording, stopRecording } from './audio/appSession'
 import { audioEngine } from './audio/engine/SidecarAudioEngine'
+import { findUnfinished, recoverUnfinished } from './files/appRecovery'
 import { handleMediaProtocol, registerMediaScheme } from './files/mediaProtocol'
 import { registerIpc } from './ipc'
+import { broadcast } from './ipc/typed'
 import { initLog } from './log'
 import { initSettings } from './settings'
 import { createMainWindow } from './window'
@@ -18,10 +20,11 @@ initLog()
 registerMediaScheme()
 
 /** Device polling and level monitoring run only while the window can be seen. */
-function openMainWindow(): void {
+function openMainWindow(): BrowserWindow {
   const window = createMainWindow()
   watchDevicesWhileVisible(window)
   monitorWhileVisible(window)
+  return window
 }
 
 app.whenReady().then(() => {
@@ -29,6 +32,8 @@ app.whenReady().then(() => {
 
   // The IPC handlers and the window geometry both read the settings.
   initSettings()
+  // Before the IPC, so no new recording can be in the list.
+  const unfinished = findUnfinished()
   registerIpc()
   handleMediaProtocol()
 
@@ -38,7 +43,10 @@ app.whenReady().then(() => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  openMainWindow()
+  // Repaired once the page loads, so it is there to hear the notice.
+  openMainWindow().webContents.once('did-finish-load', () => {
+    void recoverUnfinished(unfinished, (notice) => broadcast('notice', notice))
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) openMainWindow()

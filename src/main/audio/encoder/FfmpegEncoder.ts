@@ -10,10 +10,15 @@ import { spawn, type ChildProcessWithoutNullStreams } from 'child_process'
 import { rename, stat } from 'fs/promises'
 import type { Writable } from 'stream'
 import { FFMPEG_STDERR_TAIL_BYTES, FILE_PROGRESS_MS } from '@shared/defaults'
-import type { Encoder, EncoderProgress, FinalFile, OutputSettings, PcmFormat } from './Encoder'
+import {
+  PART_SUFFIX,
+  type Encoder,
+  type EncoderProgress,
+  type FinalFile,
+  type OutputSettings,
+  type PcmFormat
+} from './Encoder'
 import { ffmpegArgs } from './ffmpegArgs'
-
-const PART_SUFFIX = '.part'
 
 export interface FfmpegEncoderOptions {
   /** Path of the ffmpeg executable (`ffmpegPath()` in the app). */

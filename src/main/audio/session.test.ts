@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AudioDevice, HistoryItem, Notice } from '@shared/types'
+import type { OpenRecording } from '../files/partFiles'
 import type { CaptureTap } from './capture'
 import { sine } from './dsp/testSignals'
 import type { Encoder, FinalFile, OutputSettings, PcmFormat } from './encoder/Encoder'
@@ -70,6 +71,7 @@ interface Harness {
   encoder: FakeEncoder
   history: HistoryItem[]
   notices: Notice[]
+  journal: Map<string, OpenRecording>
   released: ReturnType<typeof vi.fn>
   play: (seconds: number) => void
   wait: (ms: number) => void
@@ -85,6 +87,7 @@ function setup(kind: AudioDevice['kind'] = 'capture', openError?: Error): Harnes
   const encoder = new FakeEncoder()
   const history: HistoryItem[] = []
   const notices: Notice[] = []
+  const journal = new Map<string, OpenRecording>()
 
   const tap: CaptureTap = {
     device: device(kind),
@@ -104,6 +107,10 @@ function setup(kind: AudioDevice['kind'] = 'capture', openError?: Error): Harnes
       return { path: PATH, output: OUTPUT }
     },
     addToHistory: (item) => history.push(item),
+    journal: {
+      add: (recording) => journal.set(recording.path, recording),
+      remove: (path) => journal.delete(path)
+    },
     emit: { state: () => {}, notice: (notice) => notices.push(notice) },
     log: { info: () => {}, warn: () => {} },
     now: () => clock
@@ -122,7 +129,17 @@ function setup(kind: AudioDevice['kind'] = 'capture', openError?: Error): Harnes
     clock += ms
   }
 
-  return { session, encoder, history, notices, released, play, wait, lose: (r: string) => lost(r) }
+  return {
+    session,
+    encoder,
+    history,
+    notices,
+    journal,
+    released,
+    play,
+    wait,
+    lose: (r: string) => lost(r)
+  }
 }
 
 describe('RecordingSession', () => {
@@ -203,8 +220,19 @@ describe('RecordingSession', () => {
     ])
   })
 
+  it('remembers the file while it is written and forgets it once saved', async () => {
+    const { session, journal, wait } = setup()
+    wait(500)
+    await session.record()
+    expect([...journal.values()]).toEqual([
+      { path: PATH, createdAt: 500, source: { mode: 'voice' } }
+    ])
+    await session.stop()
+    expect(journal.size).toBe(0)
+  })
+
   it('aborts and keeps the .part when the encoder dies', async () => {
-    const { session, encoder, history, notices, play } = setup()
+    const { session, encoder, history, notices, journal, play } = setup()
     await session.record()
     play(1)
     encoder.die('ffmpeg stopped while recording')
@@ -213,6 +241,8 @@ describe('RecordingSession', () => {
     expect(encoder.aborted).toBe(true)
     expect(history).toHaveLength(0)
     expect(notices).toEqual([{ level: 'error', message: 'ffmpeg stopped while recording' }])
+    // Left for the recovery at the next start.
+    expect(journal.has(PATH)).toBe(true)
   })
 
   it('ignores Record while already recording and Stop while idle', async () => {
