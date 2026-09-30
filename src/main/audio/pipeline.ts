@@ -5,8 +5,9 @@
  * meter frame and one waveform frame.
  *
  * While recording, the gained samples also go to the sink (`setSink`), so the
- * file hears the Level slider. The resampler (task 15) and the mixer (task 16)
- * plug in at the marked point, before the gain.
+ * file hears the Level slider. In "Computer Sounds & Voice" the stream pushed
+ * here is already the mix, resampled (`mixedStream.ts`), so the Level acts on
+ * the sum.
  */
 
 import { WAVE_COLUMNS_PER_FRAME } from '@shared/defaults'
@@ -46,7 +47,6 @@ export class Pipeline {
   }
 
   push(samples: Float32Array): void {
-    // Resampler (15) and mixer (16) go here, before the gain.
     const gained = this.gain.process(samples, this.channels)
     this.sink?.(gained)
     this.meter.add(gained)

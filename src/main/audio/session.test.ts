@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { AudioDevice, HistoryItem, Notice } from '@shared/types'
 import type { OpenRecording } from '../files/partFiles'
 import type { CaptureTap } from './capture'
+import type { InputPlan } from './devices'
 import { sine } from './dsp/testSignals'
 import type { Encoder, FinalFile, OutputSettings, PcmFormat } from './encoder/Encoder'
 import { RecordingSession } from './session'
@@ -78,8 +79,10 @@ interface Harness {
   lose: (reason: string) => void
 }
 
+const MIXED: InputPlan = { kind: 'mixed', system: device('render'), voice: device('capture') }
+
 /** A capture that plays whatever the test pushes, on a clock the test moves. */
-function setup(kind: AudioDevice['kind'] = 'capture', openError?: Error): Harness {
+function setup(kind: AudioDevice['kind'] | 'mixed' = 'capture', openError?: Error): Harness {
   let clock = 0
   let data: (samples: Float32Array) => void = () => {}
   let lost: (reason: string) => void = () => {}
@@ -90,8 +93,8 @@ function setup(kind: AudioDevice['kind'] = 'capture', openError?: Error): Harnes
   const journal = new Map<string, OpenRecording>()
 
   const tap: CaptureTap = {
-    device: device(kind),
-    source: { mode: kind === 'render' ? 'system' : 'voice' },
+    input: kind === 'mixed' ? MIXED : { kind: 'single', device: device(kind) },
+    source: { mode: kind === 'render' ? 'system' : kind === 'mixed' ? 'mixed' : 'voice' },
     fellBack: false,
     sampleRate: RATE,
     channels: CHANNELS,
@@ -194,6 +197,16 @@ describe('RecordingSession', () => {
     play(1)
     await session.stop()
     expect(encoder.durationMs).toBeCloseTo(4000, 0)
+  })
+
+  it('leaves the gaps of a mix alone: the mixed stream fills them itself', async () => {
+    const { session, encoder, play, wait } = setup('mixed')
+    await session.record()
+    play(1)
+    wait(2000)
+    play(1)
+    await session.stop()
+    expect(encoder.durationMs).toBeCloseTo(2000, 6)
   })
 
   it('saves the file and warns when the device is lost', async () => {

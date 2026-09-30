@@ -7,35 +7,36 @@
  *
  * Every change (window shown or hidden, source picked, devices changed, stream
  * lost, recording started or ended) runs the same `reconcile`, one at a time:
- * work out which device should be open and reopen only if it is not the one
- * already open.
+ * work out which input should be open and reopen only if it is not the one
+ * already open. In "Computer Sounds & Voice" the input is the mix of two
+ * streams (`mixedStream.ts`), handled as one.
  */
 
 import type { BrowserWindow } from 'electron'
 import { METER_FPS } from '@shared/defaults'
-import type { AudioDevice } from '@shared/types'
 import { logger } from '../log'
 import { settings } from '../settings'
 import { onVisibilityChange } from '../windowVisibility'
 import type { CaptureTap } from './capture'
 import type { AudioStream } from './engine/AudioEngine'
 import { audioEngine } from './engine/SidecarAudioEngine'
-import { resolveForRecording } from './devices'
+import { describePlan, planKey, resolveForRecording, type InputPlan } from './devices'
+import { openMixedStream } from './mixedStream'
 import { Pipeline, type PipelineOutput } from './pipeline'
 import { startTicker } from './ticker'
 
 const TICK_MS = 1000 / METER_FPS
 
 interface Monitoring {
-  device: AudioDevice
+  input: InputPlan
   stream: AudioStream
   pipeline: Pipeline
   stopTicker: () => void
 }
 
-/** The device a recording holds, and who to tell if it goes away. */
+/** The input a recording holds, and who to tell if it goes away. */
 interface Held {
-  device: AudioDevice
+  input: InputPlan
   lost: (reason: string) => void
 }
 
@@ -82,12 +83,12 @@ export function disposeMonitor(): void {
 /** Holds the selected source for a recording: see `CaptureTap`. */
 export async function acquireCapture(): Promise<CaptureTap> {
   const chosen = settings.getSource()
-  const { device, source, fellBack } = resolveForRecording(chosen, await audioEngine.listDevices())
-  if (!device) throw new Error('the selected source is not available. Pick another one.')
+  const { input, source, fellBack } = resolveForRecording(chosen, await audioEngine.listDevices())
+  if (!input) throw new Error('the selected source is not available. Pick another one.')
 
   let lost: (reason: string) => void = () => {}
   const open = await enqueue(async () => {
-    held = { device, lost: (reason) => lost(reason) }
+    held = { input, lost: (reason) => lost(reason) }
     try {
       await reconcile()
     } catch (error) {
@@ -95,18 +96,18 @@ export async function acquireCapture(): Promise<CaptureTap> {
       refreshMonitor()
       throw error
     }
-    if (!current) throw new Error(`"${device.name}" could not be opened`)
+    if (!current) throw new Error(`${describePlan(input)} could not be opened`)
     return current
   })
 
   const release = (): void => {
-    if (held?.device !== device) return
+    if (held?.input !== input) return
     held = null
     if (current === open) open.pipeline.setSink(null)
     refreshMonitor()
   }
   return {
-    device,
+    input,
     source,
     fellBack,
     sampleRate: open.stream.sampleRate,
@@ -119,38 +120,48 @@ export async function acquireCapture(): Promise<CaptureTap> {
   }
 }
 
-async function wantedDevice(): Promise<AudioDevice | null> {
-  if (held) return held.device
+async function wantedInput(): Promise<InputPlan | null> {
+  if (held) return held.input
   if (!visible) return null
-  return resolveForRecording(settings.getSource(), await audioEngine.listDevices()).device
+  return resolveForRecording(settings.getSource(), await audioEngine.listDevices()).input
+}
+
+function sameInput(a: InputPlan | null, b: InputPlan | null): boolean {
+  return (a && planKey(a)) === (b && planKey(b))
 }
 
 async function reconcile(): Promise<void> {
-  const device = await wantedDevice()
-  if (current?.device.id === device?.id) return
+  const input = await wantedInput()
+  if (sameInput(current?.input ?? null, input)) return
   await close()
-  if (device) await open(device)
+  if (input) await open(input)
 }
 
-async function open(device: AudioDevice): Promise<void> {
-  const stream = await audioEngine.openStream(device)
+function openInput(input: InputPlan): Promise<AudioStream> {
+  if (input.kind === 'single') return audioEngine.openStream(input.device)
+  return openMixedStream(input.system, input.voice, {
+    openStream: (device) => audioEngine.openStream(device),
+    log: logger
+  })
+}
+
+async function open(input: InputPlan): Promise<void> {
+  const stream = await openInput(input)
   const pipeline = new Pipeline(stream.channels, settings.getLevel(), output)
   stream.onData((samples) => pipeline.push(samples))
   stream.onError((reason) => {
     if (current?.stream !== stream) return
-    logger.warn(`monitor: "${device.name}" lost (${reason})`)
+    logger.warn(`monitor: ${describePlan(input)} lost (${reason})`)
     current.stopTicker()
     current = null
     // The recording is let go first, so the reconcile below does not reopen a device that is gone.
-    const holder = held?.device.id === device.id ? held : null
+    const holder = held && sameInput(held.input, input) ? held : null
     if (holder) held = null
     holder?.lost(reason)
     refreshMonitor()
   })
-  current = { device, stream, pipeline, stopTicker: startTicker(TICK_MS, () => pipeline.tick()) }
-  logger.info(
-    `monitoring "${device.name}" (${device.kind}, ${stream.sampleRate} Hz, ${stream.channels} ch)`
-  )
+  current = { input, stream, pipeline, stopTicker: startTicker(TICK_MS, () => pipeline.tick()) }
+  logger.info(`monitoring ${describePlan(input)} (${stream.sampleRate} Hz, ${stream.channels} ch)`)
 }
 
 async function close(): Promise<void> {

@@ -14,6 +14,7 @@ import { SESSION_TICK_MS } from '@shared/defaults'
 import type { HistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
 import type { OpenRecording } from '../files/partFiles'
 import type { CaptureSource, CaptureTap } from './capture'
+import { describePlan, skipsSilence } from './devices'
 import type { Encoder, OutputSettings } from './encoder/Encoder'
 import { pauseToggle, transition, type SessionEffect, type SessionEvent } from './sessionMachine'
 import {
@@ -151,7 +152,7 @@ export class RecordingSession {
       path,
       output,
       timeline: startTimeline(tap.sampleRate, now),
-      loopback: tap.device.kind === 'render',
+      loopback: skipsSilence(tap.input),
       writing: true,
       createdAt: now,
       stopTicker: startTicker(SESSION_TICK_MS, () => this.deps.emit.state(this.snapshot()))
@@ -173,8 +174,8 @@ export class RecordingSession {
       this.deps.emit.notice({ level: 'warn', message })
     }
     this.deps.log.info(
-      `recording started: ${path} (${output.format}) from "${tap.device.name}" ` +
-        `(${tap.device.kind}, ${tap.sampleRate} Hz, ${tap.channels} ch)`
+      `recording started: ${path} (${output.format}) from ${describePlan(tap.input)} ` +
+        `(${tap.sampleRate} Hz, ${tap.channels} ch)`
     )
   }
 

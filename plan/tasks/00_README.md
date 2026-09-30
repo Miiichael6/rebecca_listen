@@ -48,7 +48,7 @@ Además se recortó dentro de las tareas del núcleo:
 | Diálogo de recuperación de `.part` | Se repara solo al arrancar y se añade a la lista |
 | Estados `waiting` y `scheduled` de la máquina | Solo `idle`, `recording` y `paused` |
 | Plantillas de nombre, prefijo y "Guardar como" | Un solo nombre: `[YYYY-MM-DD][hh-mm-ss]` (las plantillas vuelven con 22) |
-| Compensación de deriva en la mezcla | Primero se **mide** con el hardware real; solo se construye si el desfase molesta (decisión en 16) |
+| Compensación de deriva en la mezcla | Medida en 16: 0 ppm con el micro USB, sin compensar; `Mixer.setRatioAdjust` queda listo si otro hardware lo pide |
 
 ## Decisiones pendientes (bloquean tareas)
 
@@ -75,7 +75,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 13 | [Sesión de grabación y máquina de estados](done/13_sesion_y_maquina_de_estados.md) | 4 Grabación | 07, 10, 11, 12 | ✅ Terminada (falta prueba física con Bluetooth) |
 | 14 | [Recuperación de archivos .part](done/14_recuperacion_part.md) | 4 Grabación | 13 | ✅ Terminada |
 | 15 | [Resampler con ratio ajustable](done/15_resampler.md) | 5 Mezcla | 09 | ✅ Terminada (paso 3.1 espera la escucha del usuario) |
-| 16 | [Mezcla de sistema + micrófono](pending/16_mixer_y_deriva.md) | 5 Mezcla | 13, 15 | ⬜ Pendiente |
+| 16 | [Mezcla de sistema + micrófono](done/16_mixer_y_deriva.md) | 5 Mezcla | 13, 15 | ✅ Terminada (paso 3 y escucha de 5 min pendientes del usuario) |
 | 17 | [Historial, lista de grabaciones y abrir archivos](pending/17_historial_y_lista.md) | 6 Lista | 13 | ⬜ Pendiente |
 | 20 | [Ventana Options, pestañas y borrador](pending/despues/20_options_ventana_y_borrador.md) | 7 Options | 03, 04 | ⬜ Después |
 | 22 | [Pestaña Files (Auto Name y formatos)](pending/despues/22_pestana_files.md) | 7 Options | 12, 20 | ⬜ Después |

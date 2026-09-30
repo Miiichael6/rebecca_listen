@@ -8,6 +8,11 @@ export function percentToLinear(percent: number): number {
   return percent / 100
 }
 
+/** Gain in dB to a linear factor: 0 dB is unity. */
+export function dbToLinear(db: number): number {
+  return 10 ** (db / 20)
+}
+
 /**
  * Interleaved `samples` scaled by a gain that moves linearly from `from` to
  * `to` across the block. The input is left untouched.

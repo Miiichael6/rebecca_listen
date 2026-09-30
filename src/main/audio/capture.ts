@@ -4,10 +4,12 @@
  * endpoint as the goal). `monitor.ts` implements it; the tests use a fake.
  */
 
-import type { AudioDevice, SourceSelection } from '@shared/types'
+import type { SourceSelection } from '@shared/types'
+import type { InputPlan } from './devices'
 
 export interface CaptureTap {
-  device: AudioDevice
+  /** The device, or the two mixed, the samples come from. */
+  input: InputPlan
   /** The selection actually recorded: Computer Sounds when the chosen device is gone. */
   source: SourceSelection
   /** The chosen device was not connected and Computer Sounds is recorded instead (§4.1). */

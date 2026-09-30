@@ -127,6 +127,23 @@ export const DEVICE_POLL_MS = 2000
  */
 export const LOOPBACK_GAP_MS = 100
 
+/**
+ * Microphone kept waiting ahead of the loopback in "Computer Sounds & Voice",
+ * so the uneven arrival of the two streams' blocks does not starve the mix.
+ * It is also where the queue goes back to after running dry or over.
+ */
+export const MIX_FIFO_TARGET_MS = 20
+
+/** Most microphone the mix keeps waiting; past it the oldest is dropped. */
+export const MIX_FIFO_MAX_MS = 200
+
+/** Gain of each source in the mix, in dB. */
+export const MIX_SYSTEM_GAIN_DB = 0
+export const MIX_VOICE_GAIN_DB = 0
+
+/** The drift between the loopback and the microphone is logged every this much audio. */
+export const DRIFT_REPORT_S = 60
+
 /** `session:state` pushes per second while recording (§4.4). */
 export const SESSION_TICK_MS = 100
 
