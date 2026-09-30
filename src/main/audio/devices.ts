@@ -30,7 +30,8 @@ export function resolveSource(source: SourceSelection, devices: AudioDevice[]): 
       return single(devices.find((d) => d.id === source.deviceId) ?? null)
     case 'mixed': {
       const system = defaultOf('render', devices)
-      const voice = defaultOf('capture', devices)
+      const chosen = devices.find((d) => d.id === source.voiceId && d.kind === 'capture')
+      const voice = chosen ?? defaultOf('capture', devices)
       return system && voice ? { kind: 'mixed', system, voice } : null
     }
   }

@@ -30,9 +30,14 @@ export interface AudioDevice {
   sampleRate: number
 }
 
-/** What is being recorded: one of the three quick modes, or a specific device. */
+/**
+ * What is being recorded: one of the three quick modes, or a specific device.
+ * `mixed` may name the microphone (`voiceId`); without it, the default one.
+ */
 export type SourceSelection =
-  { mode: 'system' | 'voice' | 'mixed' } | { mode: 'device'; deviceId: string }
+  | { mode: 'system' | 'voice' }
+  | { mode: 'mixed'; voiceId?: string }
+  | { mode: 'device'; deviceId: string }
 
 export type SourceMode = SourceSelection['mode']
 

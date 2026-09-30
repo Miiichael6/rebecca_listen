@@ -13,7 +13,7 @@ import styles from './SourcePicker.module.css'
 import { QUICK_MODES, TOGGLE_KEY, deviceKey, type DeviceGroup } from './sourceOptions'
 
 const MIXED_HELP =
-  'Records the default output (what the computer plays) mixed with the default microphone.'
+  'Records the default output (what the computer plays) mixed with a microphone (the default one, or the one picked below).'
 
 /** Green check column; empty but still there, so every label lines up. */
 function SelectedCheck({ selected }: { selected: boolean }): React.JSX.Element {

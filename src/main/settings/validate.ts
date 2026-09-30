@@ -125,7 +125,11 @@ const SOURCE_MODES: readonly SourceMode[] = ['system', 'voice', 'mixed', 'device
 export function validateSource(raw: unknown, fallback: SourceSelection): SourceSelection {
   const mode = rawAt(raw, 'mode')
   if (!SOURCE_MODES.includes(mode as SourceMode)) return fallback
-  if (mode !== 'device') return { mode: mode as Exclude<SourceMode, 'device'> }
+  if (mode === 'mixed') {
+    const voiceId = rawAt(raw, 'voiceId')
+    return typeof voiceId === 'string' && voiceId !== '' ? { mode, voiceId } : { mode }
+  }
+  if (mode !== 'device') return { mode: mode as 'system' | 'voice' }
 
   const deviceId = rawAt(raw, 'deviceId')
   // A device selection without an id is unusable. The device may also be gone by

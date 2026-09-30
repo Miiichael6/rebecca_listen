@@ -14,6 +14,7 @@ import type { MeterFrame, WaveFrame } from '@shared/types'
 import { LevelSlider } from '../../components/LevelSlider'
 import { PlaybackBar } from '../../components/PlaybackBar'
 import { RecordingList } from '../../components/RecordingList/RecordingList'
+import { MicrophonePicker } from '../../components/MicrophonePicker/MicrophonePicker'
 import { SourcePicker } from '../../components/SourcePicker/SourcePicker'
 import { StatusBar } from '../../components/StatusBar'
 import { TagEditor } from '../../components/TagEditor/TagEditor'
@@ -77,6 +78,16 @@ export function MainWindow(): React.JSX.Element {
           onChange={(next) => void setSource(next)}
           onExpandedChange={(expanded) => void setSourceListExpanded(expanded)}
         />
+        {source?.mode === 'mixed' && (
+          <MicrophonePicker
+            voiceId={source.voiceId ?? ''}
+            devices={devices}
+            disabled={recording}
+            onChange={(voiceId) =>
+              void setSource(voiceId ? { mode: 'mixed', voiceId } : { mode: 'mixed' })
+            }
+          />
+        )}
         <LevelSlider percent={level} onChange={setLevel} />
         <VuMeter subscribe={onMeterFrame} />
       </section>

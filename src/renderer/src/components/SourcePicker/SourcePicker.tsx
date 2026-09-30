@@ -98,7 +98,9 @@ export function SourcePicker({
       return
     }
     const next = selectionOf(key)
-    if (next) onChange(next)
+    // Choosing the mix again keeps the microphone that was picked for it.
+    if (next?.mode === 'mixed' && source?.mode === 'mixed') onChange(source)
+    else if (next) onChange(next)
     setOpen(false)
   }
 

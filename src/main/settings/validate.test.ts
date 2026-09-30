@@ -115,6 +115,14 @@ describe('validateSource', () => {
     }
   })
 
+  it('keeps the microphone chosen for the mix, if it has an id', () => {
+    expect(validateSource({ mode: 'mixed', voiceId: 'Mic (capture)' }, fallback)).toEqual({
+      mode: 'mixed',
+      voiceId: 'Mic (capture)'
+    })
+    expect(validateSource({ mode: 'mixed', voiceId: '' }, fallback)).toEqual({ mode: 'mixed' })
+  })
+
   it('keeps a device selection only with an id', () => {
     expect(validateSource({ mode: 'device', deviceId: 'Speakers (render)' }, fallback)).toEqual({
       mode: 'device',
