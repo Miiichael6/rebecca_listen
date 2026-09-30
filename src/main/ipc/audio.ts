@@ -1,8 +1,8 @@
 /** Devices, source, level, monitoring, recording session and opening recordings. */
 
-import { spawn } from 'child_process'
 import { mkdirSync } from 'fs'
 import { shell } from 'electron'
+import { openFolder } from '../files/explorer'
 import { recordingsFolder } from '../files/naming'
 import { history } from '../history'
 import { logger } from '../log'
@@ -21,23 +21,12 @@ async function open(path: string): Promise<void> {
   }
 }
 
-/**
- * Opens a folder in the Explorer. `shell.openPath` goes through the default
- * verb of folders, which some context-menu tools break (a `none` verb gives
- * "application not found"); calling `explorer.exe` does not depend on it.
- */
-function openFolder(folder: string): void {
-  if (process.platform !== 'win32') {
-    void open(folder)
-    return
+/** Logs and shows why the Explorer could not open `path`. */
+function explorerFailed(path: string): (message: string) => void {
+  return (message) => {
+    logger.warn(`could not open ${path}: ${message}`)
+    broadcast('notice', { level: 'error', message: `Could not open ${path}: ${message}` })
   }
-  // The Explorer exits with 1 even when it opened the folder: only a failure to start counts.
-  const explorer = spawn('explorer.exe', [folder], { detached: true, stdio: 'ignore' })
-  explorer.on('error', (error) => {
-    logger.warn(`could not open ${folder}: ${error.message}`)
-    broadcast('notice', { level: 'error', message: `Could not open ${folder}: ${error.message}` })
-  })
-  explorer.unref()
 }
 
 export function registerAudioIpc(): void {
@@ -80,6 +69,6 @@ export function registerAudioIpc(): void {
   handle('shell:openRecordingsFolder', async () => {
     const folder = recordingsFolder(settings.get().files.folder)
     mkdirSync(folder, { recursive: true })
-    openFolder(folder)
+    openFolder(folder, explorerFailed(folder))
   })
 }

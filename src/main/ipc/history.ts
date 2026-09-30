@@ -9,6 +9,7 @@ import { AUDIO_FORMATS } from '@shared/defaults'
 import type { AudioFormat, HistoryItem } from '@shared/types'
 import { ffmpegPath } from '../audio/encoder/ffmpegBinary'
 import { probeDurationMs } from '../audio/encoder/runFfmpeg'
+import { showInFolder } from '../files/explorer'
 import { history } from '../history'
 import {
   convert,
@@ -181,6 +182,7 @@ export function registerHistoryIpc(): void {
   )
 
   handle('shell:showItemInFolder', ({ path }) => {
-    if (history.has(path)) shell.showItemInFolder(path)
+    if (!history.has(path)) return
+    showInFolder(path, (message) => report('open the location of', path, new Error(message)))
   })
 }
