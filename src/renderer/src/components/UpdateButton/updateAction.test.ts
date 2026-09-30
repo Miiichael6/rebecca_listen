@@ -2,13 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { updateAction } from './updateAction'
 
 describe('updateAction', () => {
-  it('offers to check when idle, up to date or after an error', () => {
-    expect(updateAction({ state: 'idle' }).step).toBe('check')
-    expect(updateAction({ state: 'upToDate' }).step).toBe('check')
-    expect(updateAction({ state: 'error', message: 'No internet connection' })).toMatchObject({
-      step: 'check',
-      title: 'No internet connection'
-    })
+  it('hides the button when there is no newer version', () => {
+    expect(updateAction({ state: 'idle' })).toBeNull()
+    expect(updateAction({ state: 'checking' })).toBeNull()
+    expect(updateAction({ state: 'upToDate' })).toBeNull()
+    expect(updateAction({ state: 'error', message: 'No internet connection' })).toBeNull()
   })
 
   it('walks download then install', () => {
@@ -16,11 +14,10 @@ describe('updateAction', () => {
       label: 'Update to 1.1.0',
       step: 'download'
     })
-    expect(updateAction({ state: 'ready', version: '1.1.0' }).step).toBe('install')
+    expect(updateAction({ state: 'ready', version: '1.1.0' })?.step).toBe('install')
   })
 
-  it('does nothing while busy', () => {
-    expect(updateAction({ state: 'checking' }).step).toBeNull()
+  it('does nothing while downloading', () => {
     expect(updateAction({ state: 'downloading', version: '1.1.0', percent: 40 })).toMatchObject({
       label: 'Downloading 40%',
       step: null

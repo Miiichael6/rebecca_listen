@@ -24,8 +24,3 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
-
-.error {
-  border-color: var(--color-record);
-  color: var(--color-record);
-}
