@@ -54,7 +54,7 @@ Además se recortó dentro de las tareas del núcleo:
 
 - [x] **D1** ~~Toolchain de Rust para el sidecar de captura (§3.2).~~ **Resuelta 2026-09-29:** instalados Rust 1.98.1 (`stable-x86_64-pc-windows-msvc`) y Visual Studio Community 2022 con el workload VCTools. `cargo` compila y enlaza; `cpal` 0.18.2 enumera los dispositivos sin la crate `windows`. Desbloquea **05** y la cadena de audio (06–10, 13 en adelante).
 - [x] **D2** ~~Actualizaciones: ¿hay un repositorio (p. ej. GitHub Releases) para publicar con `electron-updater`, o se quita `electron-updater` y el bloque `publish` que hoy apunta a `example.com`? (la pestaña About y "Check for updates" ya están eliminados) → afecta **35** (paso 1)~~ **Resuelta 2026-09-30:** GitHub Releases (`Miiichael6/rebecca_listen`), ver tarea 44.
-- [ ] **D3** Firma del instalador: ¿se distribuye sin firmar (Windows SmartScreen avisará al instalar) o hay un certificado de firma de código? → afecta **35** (paso 1)
+- [x] **D3** ~~Firma del instalador: ¿se distribuye sin firmar o hay certificado? → afecta **35** (paso 1)~~ **Resuelta 2026-09-30:** sin firmar; SmartScreen avisa en la primera instalación.
 
 ## Tablero
 
@@ -83,7 +83,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 27 | [Corte sin pérdida (Smart Split) y botón Split](done/27_corte_sin_perdida_split.md) | 9 Split | 13 | ✅ Terminada (escucha en Audacity pendiente del usuario) |
 | 30 | [Hotkeys globales](pending/despues/30_hotkeys_globales.md) | 10 Sistema | 23, 27 | ⬜ Después |
 | 31 | [Bandeja, opciones de sistema e idioma](pending/despues/31_bandeja_y_opciones_sistema.md) | 10 Sistema | 17, 23, 30 | ⬜ Después |
-| 35 | [Empaquetado Windows (NSIS)](pending/35_empaquetado_nsis.md) | 12 Empaquetado | 17 | ⬜ Pendiente |
+| 35 | [Empaquetado Windows (NSIS)](done/35_empaquetado_nsis.md) | 12 Empaquetado | 17 | ✅ Terminada (abrir en el reproductor de Windows pendiente del usuario) |
 | 36 | [Pruebas de aceptación y rendimiento](pending/36_pruebas_de_aceptacion.md) | 12 Empaquetado | 35 | ⬜ Pendiente |
 | 37 | [Menú de archivo ampliado y botón de carpeta](done/37_menu_archivo_ampliado.md) | 6 Lista | 17 | ✅ Terminada |
 | 38 | [Elegir la carpeta de las grabaciones](done/38_elegir_carpeta_de_grabaciones.md) | 6 Lista | 12, 17 | ✅ Terminada (prueba en vivo pendiente del usuario) |

@@ -1,0 +1,4 @@
+# CRT estático: rl-capture.exe no depende de VCRUNTIME140.dll, que un Windows
+# limpio no trae sin el redistribuible de Visual C++ (tarea 35).
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]

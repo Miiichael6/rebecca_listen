@@ -49,8 +49,7 @@ npm run lint
 ## Instalador
 
 ```bash
-npm run build:native   # si no se ha compilado ya el sidecar
-npm run build:win      # typecheck + build + instalador NSIS en dist/
+npm run build:win      # sidecar + typecheck + build + instalador NSIS en dist/
 ```
 
 ## Publicar una versión

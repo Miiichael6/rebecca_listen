@@ -8,41 +8,40 @@ files:
   - '!electron.vite.config.{js,ts,mjs,cjs}'
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
-  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json,*.tsbuildinfo}'
+  # Solo desarrollo: plan, fuente del sidecar (native/target pesa cientos de MB), scripts y tests.
+  - '!{plan,native,scripts,dist}/**'
+  - '!{CLAUDE.md,vitest.config.ts}'
 asarUnpack:
+  # El sidecar (resources/bin/rl-capture.exe) y ffmpeg no se pueden ejecutar desde dentro del asar;
+  # main los busca en app.asar.unpacked.
   - resources/**
   - node_modules/ffmpeg-static/**
+# Solo Windows: el sidecar de captura es WASAPI (rl-capture.exe).
+# D3: sin firmar; SmartScreen avisa en la primera instalación.
 win:
-  executableName: rebecca_listen
+  executableName: RebeccaListen
+  target:
+    - target: nsis
+      arch: x64
 nsis:
-  artifactName: ${name}-${version}-setup.${ext}
+  # Instalador asistido: permite elegir carpeta; accesos directos en escritorio y menú Inicio.
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
-  createDesktopShortcut: always
-mac:
-  entitlementsInherit: build/entitlements.mac.plist
-  extendInfo:
-    - NSCameraUsageDescription: Application requests access to the device's camera.
-    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  notarize: false
-dmg:
-  artifactName: ${name}-${version}.${ext}
-linux:
-  target:
-    - AppImage
-    - snap
-    - deb
-  maintainer: electronjs.org
-  category: Utility
-appImage:
-  artifactName: ${name}-${version}.${ext}
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  artifactName: ${name}-${version}-setup.${ext}
+  # userData (historial y ajustes) se conserva al desinstalar.
+  deleteAppDataOnUninstall: false
 npmRebuild: false
+# Releases en GitHub (D2, tarea 44). `draft`: se publica a mano tras revisarlo.
 publish:
   provider: github
   owner: Miiichael6
   repo: rebecca_listen
   releaseType: draft
-electronDownload:
-  mirror: https://npmmirror.com/mirrors/electron/
