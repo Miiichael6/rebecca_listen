@@ -112,8 +112,7 @@ Las apps instaladas la detectan al arrancar. Cuando hay una versión nueva apare
 - **`GitHub Personal Access Token is not set`**: falta `$env:GH_TOKEN = (gh auth token)` en esa terminal. La variable se pierde al cerrarla. El instalador ya quedó en `dist/`; basta con repetir el paso 4.
 - **Dos borradores con el mismo tag**: si el borrador no existe antes de `npm run release`, `electron-builder` puede crear dos y repartir los archivos entre ellos. Para arreglarlo:
   1. Borra el que solo tiene el `.blockmap`.
-  2. En el otro, **Edit** → arrastra `dist
-ebecca_listen-X.Y.Z-setup.exe.blockmap` desde el Explorador de Windows.
+  2. En el otro, **Edit** → arrastra `dist/rebecca_listen-X.Y.Z-setup.exe.blockmap` desde el Explorador de Windows.
   3. Comprueba que el adjunto termine en `.blockmap`: si termina en `.url` es un acceso directo, bórralo y súbelo de nuevo.
 - **No repitas `npm run release` con la misma versión**: vuelve a subir los archivos y puede duplicar borradores. Si hay que recompilar, sube la versión (`npm version patch`).
 - **Sin `.blockmap`** la actualización funciona igual, pero descarga el instalador completo en vez de solo lo que cambió.
