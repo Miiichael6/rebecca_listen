@@ -8,3 +8,5 @@ out
 # Sidecar binary, built by `npm run build:native`
 resources/bin/
 *.tsbuildinfo
+
+.env
