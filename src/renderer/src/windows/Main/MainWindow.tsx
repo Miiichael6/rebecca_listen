@@ -4,8 +4,8 @@
  * badges; the playback bar, the recording list and the transport bar.
  *
  * Everything is live: Level drives the gain in main (monitor and file), and
- * the VU meter and waveform draw its frames. Record, Pause and Stop drive the
- * session in main; with no recording in progress, ▶ ⏸ ■ play the selected
+ * the VU meter and waveform draw its frames. Record, Pause, Stop and Split
+ * drive the session in main; with no recording in progress, ▶ ⏸ ■ play the selected
  * recording inside the app and the timer shows its position. What each
  * control does is in `application/useMainWindow`; this file lays them out.
  */
@@ -91,6 +91,8 @@ export function MainWindow(): React.JSX.Element {
         onStop={main.onStop}
         onPlay={main.onPlay}
         onPause={main.onPause}
+        onSplit={main.onSplit}
+        splitHotkey={main.splitHotkey}
         hasItems={items.length > 0}
         folder={recorder.folder}
         onOpenFolder={main.openRecordingsFolder}

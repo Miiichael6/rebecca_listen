@@ -71,10 +71,17 @@ export function plannedPath(
   return pathOf()
 }
 
-/** Throws with a readable message if the folder cannot be created or written. */
-export function resolveOutputPath(files: NamingSettings, now: Date): string {
+/**
+ * Throws with a readable message if the folder cannot be created or written.
+ * `busy` are files being written whose `.part` may not be on disk yet.
+ */
+export function resolveOutputPath(
+  files: NamingSettings,
+  now: Date,
+  busy: readonly string[] = []
+): string {
   checkWritableFolder(recordingsFolder(files.folder))
-  return plannedPath(files, now)
+  return plannedPath(files, now, (path) => busy.includes(path) || existsSync(path))
 }
 
 /** A name typed in "Save as" always ends in the extension of its format. */

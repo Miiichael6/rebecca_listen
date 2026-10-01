@@ -54,6 +54,8 @@ export interface Encoder {
   close(): Promise<FinalFile>
   /** Stops at once, leaving the `.part` as it is. */
   abort(): Promise<void>
+  /** Stops at once and deletes the `.part`: for a file that never got any audio. */
+  discard(): Promise<void>
   onProgress(listener: (progress: EncoderProgress) => void): void
   /** The encoder died while recording (not after `close` or `abort`). */
   onError(listener: (error: Error) => void): void

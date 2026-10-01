@@ -36,12 +36,15 @@ function device(kind: AudioDevice['kind']): AudioDevice {
 /** Counts what it is given and "writes" a file of exactly that length. */
 class FakeEncoder implements Encoder {
   frames = 0
+  path = ''
   closed = false
   aborted = false
+  discarded = false
   private input: PcmFormat = { sampleRate: RATE, channels: CHANNELS }
   private error: (error: Error) => void = () => {}
 
-  async open(_path: string, input: PcmFormat): Promise<void> {
+  async open(path: string, input: PcmFormat): Promise<void> {
+    this.path = path
     this.input = input
   }
   async write(samples: Float32Array): Promise<void> {
@@ -49,10 +52,13 @@ class FakeEncoder implements Encoder {
   }
   async close(): Promise<FinalFile> {
     this.closed = true
-    return { path: PATH, format: 'mp3', sizeBytes: 1234, durationMs: this.durationMs }
+    return { path: this.path, format: 'mp3', sizeBytes: 1234, durationMs: this.durationMs }
   }
   async abort(): Promise<void> {
     this.aborted = true
+  }
+  async discard(): Promise<void> {
+    this.discarded = true
   }
   onProgress(): void {
     // The session does not read the progress.
@@ -70,7 +76,10 @@ class FakeEncoder implements Encoder {
 
 interface Harness {
   session: RecordingSession
+  /** The encoder of the first file. */
   encoder: FakeEncoder
+  /** One per file, in the order they were opened. */
+  encoders: FakeEncoder[]
   history: NewHistoryItem[]
   notices: Notice[]
   journal: Map<string, OpenRecording>
@@ -92,7 +101,9 @@ function setup(
   let data: (samples: Float32Array) => void = () => {}
   let lost: (reason: string) => void = () => {}
   const released = vi.fn()
-  const encoder = new FakeEncoder()
+  // The first one exists before recording, so the tests can hold it from the start.
+  const encoders = [new FakeEncoder()]
+  let opened = 0
   const history: NewHistoryItem[] = []
   const notices: Notice[] = []
   const journal = new Map<string, OpenRecording>()
@@ -109,10 +120,15 @@ function setup(
   }
   const session = new RecordingSession({
     capture: { acquire: async () => tap },
-    createEncoder: () => encoder,
+    createEncoder: () => {
+      if (opened === encoders.length) encoders.push(new FakeEncoder())
+      return encoders[opened++]
+    },
     nextFile: () => {
       if (openError) throw openError
-      return { path: PATH, output: OUTPUT }
+      // Asked before each encoder is created: the first file is PATH, the splits number on.
+      const path = opened === 0 ? PATH : `C:/rec/test (${opened}).mp3`
+      return { path, output: OUTPUT }
     },
     addToHistory: (item) => history.push(item),
     journal: {
@@ -140,7 +156,8 @@ function setup(
 
   return {
     session,
-    encoder,
+    encoder: encoders[0],
+    encoders,
     history,
     notices,
     journal,
@@ -339,5 +356,87 @@ describe('RecordingSession · live transcription', () => {
     expect(encoder.durationMs).toBeCloseTo(2000, 6)
     expect(history).toHaveLength(1)
     expect(notices).toEqual([])
+  })
+})
+
+const SPLIT_PATH = 'C:/rec/test (1).mp3'
+const framesOf = (seconds: number): number => seconds * RATE
+
+describe('RecordingSession · split', () => {
+  it('goes on in a new file at the next block, losing nothing, while the timer keeps counting', async () => {
+    const { session, encoders, history, play } = setup()
+    await session.record()
+    play(2)
+    expect((await session.split()).file?.path).toBe(PATH)
+    play(3)
+
+    expect(session.snapshot()).toMatchObject({ state: 'recording', file: { path: SPLIT_PATH } })
+    expect(session.snapshot().elapsedMs).toBeCloseTo(5000, 6)
+    await session.stop()
+
+    expect(encoders.map((encoder) => encoder.frames)).toEqual([framesOf(2), framesOf(3)])
+    expect(history.map((item) => item.path)).toEqual([PATH, SPLIT_PATH])
+    expect(history.map((item) => Math.round(item.durationMs))).toEqual([2000, 3000])
+  })
+
+  it('cuts inside the next block at the frame given', async () => {
+    const { session, encoders, play } = setup()
+    await session.record()
+    play(1)
+    await session.split(100)
+    play(1)
+    await session.stop()
+    expect(encoders.map((encoder) => encoder.frames)).toEqual([
+      framesOf(1) + 100,
+      framesOf(1) - 100
+    ])
+  })
+
+  it('cuts at the pause when no block came in between', async () => {
+    const { session, encoders, play } = setup()
+    await session.record()
+    play(1)
+    await session.split()
+    await session.togglePause()
+    expect(session.snapshot().file?.path).toBe(SPLIT_PATH)
+    await session.togglePause()
+    play(2)
+    await session.stop()
+    expect(encoders.map((encoder) => encoder.frames)).toEqual([framesOf(1), framesOf(2)])
+  })
+
+  it('drops the next file when Stop comes before any block reached it', async () => {
+    const { session, encoders, history, journal, play } = setup()
+    await session.record()
+    play(1)
+    await session.split()
+    await session.stop()
+    expect(encoders[1].discarded).toBe(true)
+    expect(history.map((item) => item.path)).toEqual([PATH])
+    expect(journal.size).toBe(0)
+  })
+
+  it('only splits while recording', async () => {
+    const { session, encoders, play } = setup()
+    expect((await session.split()).state).toBe('idle')
+    await session.record()
+    play(1)
+    await session.togglePause()
+    await session.split()
+    await session.stop()
+    expect(encoders).toHaveLength(1)
+  })
+
+  it('gives each file its own live transcription', async () => {
+    const live = fakeLive()
+    const { session, encoders, play } = setup('capture', undefined, live)
+    await session.record()
+    play(1)
+    await session.split()
+    play(1)
+    await session.stop()
+    expect(live.started.map((recording) => recording.path)).toEqual([PATH, SPLIT_PATH])
+    expect(live.ended).toEqual([PATH, SPLIT_PATH])
+    expect(live.frames).toBe(encoders[0].frames + encoders[1].frames)
   })
 })

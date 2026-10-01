@@ -13,6 +13,8 @@ interface SessionStore {
   /** Pauses while recording, resumes while paused. */
   togglePause: () => Promise<void>
   stop: () => Promise<void>
+  /** Ends the file and goes on recording in a new one. */
+  split: () => Promise<void>
 }
 
 export const useSessionStore = create<SessionStore>((set) => ({
@@ -20,7 +22,8 @@ export const useSessionStore = create<SessionStore>((set) => ({
 
   record: async () => set({ session: await window.api.invoke('session:record') }),
   togglePause: async () => set({ session: await window.api.invoke('session:pause') }),
-  stop: async () => set({ session: await window.api.invoke('session:stop') })
+  stop: async () => set({ session: await window.api.invoke('session:stop') }),
+  split: async () => set({ session: await window.api.invoke('session:split') })
 }))
 
 let subscribed = false

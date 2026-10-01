@@ -11,6 +11,8 @@ export type SessionEvent =
   | { type: 'PAUSE' }
   | { type: 'RESUME' }
   | { type: 'STOP' }
+  /** Ends the file and goes on in a new one; `atFrame` is where in the next block (default 0). */
+  | { type: 'SPLIT'; atFrame?: number }
   | { type: 'DEVICE_LOST'; reason: string }
   /** The file could not be opened, or the encoder died while recording. */
   | { type: 'FAILED'; message: string }
@@ -19,6 +21,8 @@ export type SessionEffect =
   | { type: 'openFile' }
   | { type: 'pauseFile' }
   | { type: 'resumeFile' }
+  /** Opens the next file and moves the recording to it, losing no sample (§12.2). */
+  | { type: 'rotateFile'; atFrame: number }
   /** Finishes the file and lists it; `notice` tells the user why, when they did not ask. */
   | { type: 'closeFile'; notice?: string }
   /** Drops whatever is open, keeping the `.part`, and shows `message`. */
@@ -51,6 +55,10 @@ export function transition(state: SessionState, event: SessionEvent): Transition
       return state === 'recording' ? to('paused', { type: 'pauseFile' }) : ignored(state)
     case 'RESUME':
       return state === 'paused' ? to('recording', { type: 'resumeFile' }) : ignored(state)
+    case 'SPLIT':
+      return state === 'recording'
+        ? to('recording', { type: 'rotateFile', atFrame: event.atFrame ?? 0 })
+        : ignored(state)
     case 'STOP':
       // "any --stop--> idle": stopping while idle is not an error, it just does nothing.
       return active ? to('idle', { type: 'closeFile' }) : to('idle')

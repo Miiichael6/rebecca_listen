@@ -1,23 +1,24 @@
 /**
  * The recording session (spec §4.4, §4.9): runs the effects of
- * `sessionMachine` against the capture tap and an encoder. Events are handled
- * one at a time, so a Stop that arrives while the file is still opening waits
- * for it instead of racing it.
+ * `sessionMachine` against the capture tap and the files it writes. Events are
+ * handled one at a time, so a Stop that arrives while a file is still opening
+ * waits for it instead of racing it.
+ *
+ * A take is what runs from Record to Stop: the input, the timer and the
+ * silence fills. It writes one file, or several when it is split (§12.2):
+ * Split is the one way to cut, so anything else that wants a new file goes
+ * through `SPLIT` too.
  *
  * Nothing here touches Electron: `appSession.ts` wires the real capture,
  * ffmpeg, settings and history, and the tests wire fakes.
  */
 
-import { randomUUID } from 'crypto'
 import { basename } from 'path'
 import { SESSION_TICK_MS } from '@shared/defaults'
-import type { NewHistoryItem, Notice, SessionSnapshot, SessionState } from '@shared/types'
-import type { OpenRecording } from '../files/partFiles'
+import type { Notice, SessionSnapshot, SessionState } from '@shared/types'
 import type { CaptureSource, CaptureTap } from './capture'
 import { describePlan, skipsSilence } from './devices'
-import type { Encoder, OutputSettings } from './encoder/Encoder'
-import { deferredLiveSink } from './live/deferredSink'
-import type { LiveLink, LiveSink } from './live/LiveLink'
+import { RecordingFiles, type RecordingFile, type RecordingFileDeps } from './recordingFile'
 import { pauseToggle, transition, type SessionEffect, type SessionEvent } from './sessionMachine'
 import {
   addSilence,
@@ -27,6 +28,7 @@ import {
   startTimeline,
   type Timeline
 } from './silence'
+import { splitBlock } from './splitter'
 import { startTicker } from './ticker'
 
 export interface SessionEmit {
@@ -34,45 +36,50 @@ export interface SessionEmit {
   notice: (notice: Notice) => void
 }
 
-export interface SessionDeps {
+export interface SessionDeps extends Omit<RecordingFileDeps, 'log' | 'fail' | 'now'> {
   capture: CaptureSource
-  createEncoder: () => Encoder
-  /** Where the next file goes and how it is encoded, read from the settings when it opens. */
-  nextFile: () => { path: string; output: OutputSettings }
-  addToHistory: (item: NewHistoryItem) => void
-  /** Remembers the files being written, for the recovery after a crash (task 14). */
-  journal: { add: (recording: OpenRecording) => void; remove: (path: string) => void }
-  /** Live transcription of what is recorded (task 46); without it, none. */
-  live?: LiveLink
   emit: SessionEmit
   log: { info: (message: string) => void; warn: (message: string) => void }
   now?: () => number
 }
 
-interface OpenFile {
+/** A split waiting for the next block: the file after the cut is already open. */
+interface PendingCut {
+  next: RecordingFile
+  /** Frame of the next block where the cut goes. */
+  atFrame: number
+}
+
+interface Take {
   tap: CaptureTap
-  encoder: Encoder
-  path: string
-  output: OutputSettings
+  /** The file being written now. */
+  file: RecordingFile
+  cut: PendingCut | null
+  /** Frames of the whole take, so the timer goes on across splits. */
   timeline: Timeline
   /** WASAPI loopback sends nothing during silence: the gaps are filled (see `silence.ts`). */
   loopback: boolean
   /** `false` while paused: the blocks keep coming but are not written. */
   writing: boolean
-  /** Gets every block the encoder gets; `null` without live transcription. */
-  live: LiveSink | null
-  createdAt: number
   stopTicker: () => void
 }
 
 export class RecordingSession {
   private state: SessionState = 'idle'
-  private file: OpenFile | null = null
+  private take: Take | null = null
   private queue: Promise<void> = Promise.resolve()
+  /** Files left behind by a split, still being finished while the take goes on. */
+  private readonly saving = new Set<Promise<unknown>>()
+  private readonly files: RecordingFiles
   private readonly now: () => number
 
   constructor(private readonly deps: SessionDeps) {
     this.now = deps.now ?? Date.now
+    this.files = new RecordingFiles({
+      ...deps,
+      fail: (message) => this.notifyError(message),
+      now: this.now
+    })
   }
 
   record(): Promise<SessionSnapshot> {
@@ -84,6 +91,14 @@ export class RecordingSession {
     return this.dispatch(pauseToggle(this.state))
   }
 
+  /**
+   * Ends the file and goes on in a new one without losing a sample: the cut
+   * falls at `atFrame` of the next block (its start by default).
+   */
+  split(atFrame?: number): Promise<SessionSnapshot> {
+    return this.dispatch({ type: 'SPLIT', atFrame })
+  }
+
   stop(): Promise<SessionSnapshot> {
     return this.dispatch({ type: 'STOP' })
   }
@@ -93,11 +108,11 @@ export class RecordingSession {
   }
 
   snapshot(): SessionSnapshot {
-    const file = this.file
+    const take = this.take
     return {
       state: this.state,
-      elapsedMs: file ? framesToMs(file.timeline, file.timeline.framesWritten) : 0,
-      file: file ? { path: file.path, name: basename(file.path) } : null
+      elapsedMs: take ? framesToMs(take.timeline, take.timeline.framesWritten) : 0,
+      file: take ? { path: take.file.path, name: basename(take.file.path) } : null
     }
   }
 
@@ -126,6 +141,8 @@ export class RecordingSession {
         return this.pauseFile()
       case 'resumeFile':
         return this.resumeFile()
+      case 'rotateFile':
+        return this.rotateFile(effect.atFrame)
       case 'closeFile':
         return this.closeFile(effect.notice)
       case 'abortFile':
@@ -137,10 +154,8 @@ export class RecordingSession {
     let tap: CaptureTap | null = null
     try {
       tap = await this.deps.capture.acquire()
-      const { path, output } = this.deps.nextFile()
-      const encoder = this.deps.createEncoder()
-      await encoder.open(path, { sampleRate: tap.sampleRate, channels: tap.channels }, output)
-      this.attach(tap, encoder, path, output)
+      const file = await this.files.open(tap, [])
+      this.attach(tap, file)
     } catch (error) {
       tap?.release()
       await this.step({
@@ -150,29 +165,24 @@ export class RecordingSession {
     }
   }
 
-  private attach(tap: CaptureTap, encoder: Encoder, path: string, output: OutputSettings): void {
+  private attach(tap: CaptureTap, file: RecordingFile): void {
     const now = this.now()
-    const file: OpenFile = {
+    const take: Take = {
       tap,
-      encoder,
-      path,
-      output,
+      file,
+      cut: null,
       timeline: startTimeline(tap.sampleRate, now),
       loopback: skipsSilence(tap.input),
       writing: true,
-      live: this.startLive(tap, path, now),
-      createdAt: now,
       stopTicker: startTicker(SESSION_TICK_MS, () => this.deps.emit.state(this.snapshot()))
     }
-    this.file = file
-    this.deps.journal.add({ path, createdAt: now, source: tap.source })
+    this.take = take
+    this.files.begin(file, tap)
+    this.watch(file)
 
-    tap.onData((samples) => this.write(file, samples))
+    tap.onData((samples) => this.write(take, samples))
     tap.onLost((reason) => {
-      if (this.file === file) void this.dispatch({ type: 'DEVICE_LOST', reason })
-    })
-    encoder.onError((error) => {
-      if (this.file === file) void this.dispatch({ type: 'FAILED', message: error.message })
+      if (this.take === take) void this.dispatch({ type: 'DEVICE_LOST', reason })
     })
 
     if (tap.fellBack) {
@@ -181,115 +191,150 @@ export class RecordingSession {
       this.deps.emit.notice({ level: 'warn', message })
     }
     this.deps.log.info(
-      `recording started: ${path} (${output.format}) from ${describePlan(tap.input)} ` +
+      `recording started: ${file.path} (${file.output.format}) from ${describePlan(tap.input)} ` +
         `(${tap.sampleRate} Hz, ${tap.channels} ch)`
     )
   }
 
-  /**
-   * Starting the live side takes a moment (finding RebeccaWrites): the
-   * recording does not wait for it, the deferred sink keeps the blocks.
-   */
-  private startLive(tap: CaptureTap, path: string, startedAt: number): LiveSink | null {
-    const live = this.deps.live
-    if (!live) return null
-    return deferredLiveSink(
-      live.start({ path, startedAt, sampleRate: tap.sampleRate, channels: tap.channels })
-    )
+  /** An encoder dying while it has, or is about to get, the audio breaks the recording. */
+  private watch(file: RecordingFile): void {
+    file.encoder.onError((error) => {
+      const take = this.take
+      if (take && (take.file === file || take.cut?.next === file)) {
+        void this.dispatch({ type: 'FAILED', message: error.message })
+      }
+    })
   }
 
-  private write(file: OpenFile, samples: Float32Array): void {
-    if (!file.writing) return
-    const frames = samples.length / file.tap.channels
+  private write(take: Take, samples: Float32Array): void {
+    if (!take.writing) return
+    const frames = samples.length / take.tap.channels
     const arrival = this.now()
-    if (file.loopback) this.fillSilence(file, silenceBefore(file.timeline, arrival, frames))
-    this.writeAudio(file, samples)
-    file.timeline.framesWritten += frames
-    file.timeline.lastArrivalMs = arrival
+    if (take.loopback) this.fillSilence(take, silenceBefore(take.timeline, arrival, frames))
+    this.writeAudio(take, samples)
+    take.timeline.framesWritten += frames
+    take.timeline.lastArrivalMs = arrival
   }
 
-  private fillSilence(file: OpenFile, frames: number): void {
+  private fillSilence(take: Take, frames: number): void {
     if (frames <= 0) return
-    this.writeAudio(file, new Float32Array(frames * file.tap.channels))
-    addSilence(file.timeline, frames)
+    this.writeAudio(take, new Float32Array(frames * take.tap.channels))
+    addSilence(take.timeline, frames)
   }
 
-  /** The file and the live transcription get the same audio, so their times match. */
-  private writeAudio(file: OpenFile, samples: Float32Array): void {
-    void file.encoder.write(samples)
-    file.live?.write(samples)
+  /** Every sample goes through here, so a pending cut always lands on the right one. */
+  private writeAudio(take: Take, samples: Float32Array): void {
+    const cut = take.cut
+    if (!cut) return this.files.write(take.file, samples)
+    const [before, after] = splitBlock(samples, take.tap.channels, cut.atFrame)
+    this.files.write(take.file, before)
+    this.handOver(take)
+    this.files.write(take.file, after)
   }
 
   /** Silence up to now, when the loopback went quiet before the pause or the stop. */
-  private fillTail(file: OpenFile): void {
-    if (file.loopback && file.writing) {
-      this.fillSilence(file, silenceBefore(file.timeline, this.now(), 0))
+  private fillTail(take: Take): void {
+    if (take.loopback && take.writing) {
+      this.fillSilence(take, silenceBefore(take.timeline, this.now(), 0))
     }
+  }
+
+  /**
+   * Opens the next file before letting go of the current one, so the capture
+   * never waits: the blocks that come meanwhile still go to the current file,
+   * and the next block is cut between both.
+   */
+  private async rotateFile(atFrame: number): Promise<void> {
+    const take = this.take
+    if (!take) return
+    if (take.cut) {
+      this.deps.log.warn('session: split ignored, the previous one has not happened yet')
+      return
+    }
+    try {
+      const next = await this.files.open(take.tap, [take.file.path])
+      this.watch(next)
+      take.cut = { next, atFrame }
+    } catch (error) {
+      this.notifyError(`Could not split the recording: ${(error as Error).message}`)
+    }
+  }
+
+  /** The next file takes the audio; the previous one is finished without holding the capture. */
+  private handOver(take: Take): void {
+    const cut = take.cut
+    if (!cut) return
+    take.cut = null
+    const previous = take.file
+    take.file = cut.next
+    this.files.begin(take.file, take.tap)
+    this.finishInBackground(previous, take)
+    this.deps.log.info(`recording split: ${previous.path} → ${take.file.path}`)
+    this.deps.emit.state(this.snapshot())
+  }
+
+  private finishInBackground(file: RecordingFile, take: Take): void {
+    const saved = this.files.save(file, take.tap.source).finally(() => this.saving.delete(saved))
+    this.saving.add(saved)
+  }
+
+  /** Waits for the files a split left behind, so Stop returns with every file listed. */
+  private async settle(): Promise<void> {
+    await Promise.all(this.saving)
   }
 
   private pauseFile(): void {
-    const file = this.file
-    if (!file) return
-    this.fillTail(file)
-    file.writing = false
+    const take = this.take
+    if (!take) return
+    this.fillTail(take)
+    // A split just before the pause falls at the pause: the next file starts when it resumes.
+    this.handOver(take)
+    take.writing = false
   }
 
   private resumeFile(): void {
-    const file = this.file
-    if (!file) return
-    resumeTimeline(file.timeline, this.now())
-    file.writing = true
+    const take = this.take
+    if (!take) return
+    resumeTimeline(take.timeline, this.now())
+    take.writing = true
   }
 
-  /** Takes the open file out of the session, so late blocks and events find nothing. */
-  private detach(): OpenFile | null {
-    const file = this.file
-    this.file = null
-    if (!file) return null
-    file.stopTicker()
-    file.tap.release()
-    return file
+  /** Takes the take out of the session, so late blocks and events find nothing. */
+  private detach(): Take | null {
+    const take = this.take
+    this.take = null
+    if (!take) return null
+    take.stopTicker()
+    take.tap.release()
+    return take
   }
 
   private async closeFile(notice?: string): Promise<void> {
-    const file = this.file
-    if (!file) return
-    this.fillTail(file)
+    const take = this.take
+    if (!take) return
+    this.fillTail(take)
     this.detach()
-    let finalPath: string | null = null
-    try {
-      const final = await file.encoder.close()
-      finalPath = final.path
-      this.deps.journal.remove(file.path)
-      this.deps.addToHistory({
-        id: randomUUID(),
-        path: final.path,
-        name: basename(final.path),
-        format: final.format,
-        durationMs: final.durationMs,
-        sizeBytes: final.sizeBytes,
-        createdAt: file.createdAt,
-        source: file.tap.source
-      })
-      const { gaps, silenceFrames } = file.timeline
-      this.deps.log.info(
-        `recording saved: ${final.path} (${final.format}, ${Math.round(final.durationMs)} ms, ` +
-          `${gaps} gaps filled with ${Math.round(framesToMs(file.timeline, silenceFrames))} ms of silence)`
-      )
-      if (notice) {
-        this.deps.log.warn(notice)
-        this.deps.emit.notice({ level: 'warn', message: notice })
-      }
-    } catch (error) {
-      this.notifyError(`Could not save the recording: ${(error as Error).message}`)
+    // A split that no block reached would only make an empty file.
+    if (take.cut) await this.files.discard(take.cut.next)
+    const [saved] = await Promise.all([this.files.save(take.file, take.tap.source), this.settle()])
+    const { gaps, silenceFrames } = take.timeline
+    this.deps.log.info(
+      `recording stopped after ${Math.round(framesToMs(take.timeline, take.timeline.framesWritten))} ms ` +
+        `(${gaps} gaps filled with ${Math.round(framesToMs(take.timeline, silenceFrames))} ms of silence)`
+    )
+    if (saved && notice) {
+      this.deps.log.warn(notice)
+      this.deps.emit.notice({ level: 'warn', message: notice })
     }
-    await file.live?.end(finalPath)
   }
 
   private async abortFile(message: string): Promise<void> {
-    const file = this.detach()
-    await file?.encoder.abort()
-    await file?.live?.end(null)
+    const take = this.detach()
+    if (take) {
+      await this.files.abort(take.file)
+      if (take.cut) await this.files.discard(take.cut.next)
+    }
+    await this.settle()
     this.notifyError(message)
   }
 

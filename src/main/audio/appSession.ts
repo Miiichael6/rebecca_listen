@@ -23,11 +23,12 @@ let session: RecordingSession | null = null
 /** Path typed in "Save as" for the recording about to start; used once. */
 let chosenPath: string | null = null
 
-function nextFile(): { path: string; output: OutputSettings } {
+/** A split while recording gets an automatic name too, even after "Save as". */
+function nextFile(busy: readonly string[]): { path: string; output: OutputSettings } {
   const files = settings.get().files
   const { format, mp3, wav } = files
   const output: OutputSettings = format === 'mp3' ? { format, ...mp3 } : { format, ...wav }
-  const path = chosenPath ?? resolveOutputPath(files, new Date())
+  const path = chosenPath ?? resolveOutputPath(files, new Date(), busy)
   chosenPath = null
   return { path, output }
 }

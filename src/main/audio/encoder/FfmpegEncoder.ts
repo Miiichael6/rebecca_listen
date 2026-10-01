@@ -7,7 +7,7 @@
  */
 
 import { spawn, type ChildProcessWithoutNullStreams } from 'child_process'
-import { rename, stat } from 'fs/promises'
+import { rename, rm, stat } from 'fs/promises'
 import type { Writable } from 'stream'
 import { FFMPEG_STDERR_TAIL_BYTES, FILE_PROGRESS_MS } from '@shared/defaults'
 import {
@@ -109,6 +109,12 @@ export class FfmpegEncoder implements Encoder {
     const running = this.takeRunning()
     running.child.kill()
     await running.exited
+  }
+
+  async discard(): Promise<void> {
+    const partPath = this.running?.partPath
+    await this.abort()
+    if (partPath) await rm(partPath, { force: true })
   }
 
   onProgress(listener: (progress: EncoderProgress) => void): void {

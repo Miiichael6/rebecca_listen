@@ -33,7 +33,7 @@ Documento fuente: [../PROMPT_rebecca_listen.md](../PROMPT_rebecca_listen.md) · 
 
 **Núcleo (19 tareas):** grabar el sonido del equipo, el micrófono o los dos a la vez, que el archivo se guarde solo y se pueda encontrar y escuchar, más instalador y pruebas: **01–17, 35 y 36**. Es lo que el original da en su plan Basic (micrófono, sistema y ambos), sin el límite de 5 min.
 
-**Aplazado (5 tareas en [pending/despues/](pending/despues/)):** ~~20 ventana Options~~ (hecha 2026-09-30) · ~~22 pestaña Files~~ (hecha 2026-09-30) · ~~23 pestañas Hotkeys y System~~ (hecha 2026-09-30) · **27** botón Split · **30** hotkeys globales · **31** bandeja y arranque con Windows. Se harán solo cuando el núcleo esté terminado y funcionando; para retomar una, se mueve a `pending/` y se pone ⬜ Pendiente.
+**Aplazado (5 tareas en [pending/despues/](pending/despues/)):** ~~20 ventana Options~~ (hecha 2026-09-30) · ~~22 pestaña Files~~ (hecha 2026-09-30) · ~~23 pestañas Hotkeys y System~~ (hecha 2026-09-30) · ~~27 botón Split~~ (hecha 2026-09-30) · **30** hotkeys globales · **31** bandeja y arranque con Windows. Se harán solo cuando el núcleo esté terminado y funcionando; para retomar una, se mueve a `pending/` y se pone ⬜ Pendiente.
 
 **Eliminado del proyecto (11 tareas, 2026-09-28):** ~~reproductor propio · menú contextual~~ (recuperados en la 17, 2026-09-29) · Properties y arrastrar fuera · pestañas Effects/VAS/FLL · perfiles de configuración · AGC · supresión de ruido (RNNoise) · VAS · FLL · Schedule · convertir formato · recortar audio. No están en ninguna carpeta: si alguna vez se quieren, se replanifican desde la spec (§6–§8, §11, §12) con el siguiente número libre (37 en adelante).
 
@@ -80,7 +80,7 @@ Además se recortó dentro de las tareas del núcleo:
 | 20 | [Ventana Options, pestañas y borrador](done/20_options_ventana_y_borrador.md) | 7 Options | 03, 04 | ✅ Terminada |
 | 22 | [Pestaña Files (Auto Name y formatos)](done/22_pestana_files.md) | 7 Options | 12, 20 | ✅ Terminada |
 | 23 | [Pestañas Hotkeys y System](done/23_pestanas_hotkeys_y_system.md) | 7 Options | 20 | ✅ Terminada (registro global y efectos en 30 y 31) |
-| 27 | [Corte sin pérdida (Smart Split) y botón Split](pending/despues/27_corte_sin_perdida_split.md) | 9 Split | 13 | ⬜ Después |
+| 27 | [Corte sin pérdida (Smart Split) y botón Split](done/27_corte_sin_perdida_split.md) | 9 Split | 13 | ✅ Terminada (escucha en Audacity pendiente del usuario) |
 | 30 | [Hotkeys globales](pending/despues/30_hotkeys_globales.md) | 10 Sistema | 23, 27 | ⬜ Después |
 | 31 | [Bandeja, opciones de sistema e idioma](pending/despues/31_bandeja_y_opciones_sistema.md) | 10 Sistema | 17, 23, 30 | ⬜ Después |
 | 35 | [Empaquetado Windows (NSIS)](pending/35_empaquetado_nsis.md) | 12 Empaquetado | 17 | ⬜ Pendiente |

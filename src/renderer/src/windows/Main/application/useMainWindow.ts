@@ -10,6 +10,7 @@ import { loadDevices, useDevicesStore } from '../../../store/devices'
 import { usePlayerStore } from '../../../store/player'
 import { loadRecorder, useRecorderStore } from '../../../store/recorder'
 import { loadSession, useSessionStore } from '../../../store/session'
+import { useSettingsStore } from '../../../store/settings'
 import { runRecordingCommand } from '../../../recordingCommands/infrastructure/storesAdapter'
 import { openOptions, openRecordingsFolder } from '../infrastructure/mainApi'
 
@@ -25,6 +26,8 @@ export interface MainWindowModel {
   /** Elapsed time shown: the recording's, or the position of the file being played. */
   timerMs: number
   timerPaused: boolean
+  /** Hotkey of Cut, for the Split tooltip. */
+  splitHotkey: string | null
   refreshDevices: () => void
   runRecordingCommand: (id: string, command: RecordingCommand) => void
   openRecordingsFolder: () => void
@@ -33,13 +36,15 @@ export interface MainWindowModel {
   onStop: () => void
   onPause: () => void
   onPlay: () => void
+  onSplit: () => void
 }
 
 export function useMainWindow(): MainWindowModel {
   const recorder = useRecorderStore()
   const { devices, refresh: refreshDevices } = useDevicesStore()
   const player = usePlayerStore()
-  const { session, record, togglePause, stop: stopRecording } = useSessionStore()
+  const { session, record, togglePause, stop: stopRecording, split } = useSessionStore()
+  const splitHotkey = useSettingsStore((store) => store.settings?.hotkeys.cut ?? null)
   const recording = session.state !== 'idle'
   const { items, selectedId, tagsId } = recorder
 
@@ -64,6 +69,7 @@ export function useMainWindow(): MainWindowModel {
     player,
     timerMs: !recording && player.playingId ? player.positionMs : session.elapsedMs,
     timerPaused: recording ? session.state === 'paused' : player.paused,
+    splitHotkey,
     refreshDevices: () => void refreshDevices(),
     runRecordingCommand,
     openRecordingsFolder,
@@ -77,6 +83,7 @@ export function useMainWindow(): MainWindowModel {
     onPause: () => (recording ? void togglePause() : player.pause()),
     onPlay: () => {
       if (selected) runRecordingCommand(selected.id, 'play')
-    }
+    },
+    onSplit: () => void split()
   }
 }

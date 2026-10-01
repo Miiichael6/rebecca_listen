@@ -56,6 +56,19 @@ describe('transition', () => {
     }
   })
 
+  it('splits only while recording, at the frame given or at the start of the next block', () => {
+    expect(transition('recording', { type: 'SPLIT' })).toEqual({
+      state: 'recording',
+      effects: [{ type: 'rotateFile', atFrame: 0 }],
+      valid: true
+    })
+    expect(transition('recording', { type: 'SPLIT', atFrame: 120 }).effects).toEqual([
+      { type: 'rotateFile', atFrame: 120 }
+    ])
+    expect(transition('paused', { type: 'SPLIT' }).valid).toBe(false)
+    expect(transition('idle', { type: 'SPLIT' }).valid).toBe(false)
+  })
+
   it('aborts the file when it fails', () => {
     expect(transition('recording', { type: 'FAILED', message: 'ffmpeg died' })).toEqual({
       state: 'idle',

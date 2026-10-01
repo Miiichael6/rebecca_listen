@@ -25,7 +25,7 @@ const PAUSE_TITLES: Record<SessionState, string> = {
 }
 
 interface TransportBarProps {
-  /** Anything but `idle` turns the round button into Stop and enables Split. */
+  /** Anything but `idle` turns the round button into Stop; only `recording` enables Split. */
   state?: SessionState
   /** Clear list… is greyed out on an empty list. */
   hasItems?: boolean
@@ -40,7 +40,15 @@ interface TransportBarProps {
   onPlay?: () => void
   onPause?: () => void
   onSplit?: () => void
+  /** Hotkey of Cut, shown on the Split tooltip; `null` without one. */
+  splitHotkey?: string | null
   onOptions?: () => void
+}
+
+const SPLIT_TITLE = 'Split: start a new file without losing audio'
+
+function withHotkey(title: string, hotkey: string | null): string {
+  return hotkey ? `${title} (${hotkey})` : title
 }
 
 export function TransportBar({
@@ -56,6 +64,7 @@ export function TransportBar({
   onPlay,
   onPause,
   onSplit,
+  splitHotkey = null,
   onOptions
 }: TransportBarProps): React.JSX.Element {
   const recording = state !== 'idle'
@@ -104,8 +113,8 @@ export function TransportBar({
       <button
         type="button"
         className={styles.split}
-        title="Start a new file without losing audio"
-        disabled={!recording}
+        title={withHotkey(SPLIT_TITLE, splitHotkey)}
+        disabled={state !== 'recording'}
         onClick={onSplit}
       >
         <Scissors size={ICON} aria-hidden />

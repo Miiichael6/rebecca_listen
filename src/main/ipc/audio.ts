@@ -61,8 +61,7 @@ export function registerAudioIpc(): void {
   )
   handle('session:pause', () => session.togglePause())
   handle('session:stop', () => session.stop())
-  // Split comes with task 27: until then it changes nothing.
-  handle('session:split', () => session.snapshot())
+  handle('session:split', () => session.split())
 
   // Only files this app recorded: the renderer cannot open arbitrary paths.
   handle('shell:openPath', async ({ path }) => {
